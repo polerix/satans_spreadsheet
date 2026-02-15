@@ -40,7 +40,9 @@ function spawnHandshakeEffect() {
     sigil.style.setProperty('--tw-y', `${ty}px`);
 
     const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#brimstone");
+    const glyphs = ['#brimstone', '#pentagram', '#chaos', '#void'];
+    const randomGlyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+    use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", randomGlyph);
     sigil.appendChild(use);
 
     document.getElementById('monitor').appendChild(sigil);
@@ -90,7 +92,7 @@ async function slowRender(filter = "") {
                 document.getElementById('modem-text').innerText = "RECEIVING (" + handshakeBuffer + "%)";
 
                 td.textContent += char;
-                handshakeBuffer -= 1; // Signal decays as data flows
+                handshakeBuffer -= (Math.random() * 2 + 0.5); // Signal decays chaotically
                 playTypeSound();
                 await new Promise(r => setTimeout(r, 33));
             }
@@ -102,8 +104,8 @@ async function slowRender(filter = "") {
 
 // --- CONTROLS ---
 document.addEventListener('keydown', (e) => {
-    // Spacebar Handshake
-    if (e.code === 'Space') {
+    // Spacebar Handshake (requires NO SHIFT)
+    if (e.code === 'Space' && !e.shiftKey) {
         e.preventDefault();
         handshakeBuffer = Math.min(handshakeBuffer + 20, 100);
         spawnHandshakeEffect();
