@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SATAN'S SPREADSHEETS V6.6.6 - HANDSHAKE REQUIRED</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="monitor">
+        <svg style="display:none;">
+            <symbol id="brimstone" viewBox="0 0 100 100">
+                <path d="M50 10v40M30 30h40M30 45h40M50 50c-15 0-20 15-5 15s20-15 35-15 10 15-5 15-20-15-25-15z"
+                    stroke="currentColor" stroke-width="5" fill="none" />
+            </symbol>
+        </svg>
+
+        <div id="login-screen" class="screen active">
+            <div class="glitch-title" id="main-title">SATAN'S SPREADSHEETS</div>
+            <p>TERMINAL READY. CARRIER LOST.</p>
+            <p style="margin-top: 50px;">ENTER PASSWORD (666):</p>
+            <input type="password" id="passInput" maxlength="3" autofocus>
+        </div>
+
+        <div id="sheet-screen" class="screen">
+            <div id="status-bar">
+                <span id="modem-text">IDLE</span> |
+                <span id="handshake-warning">CARRIER DROPPED - MASH [SPACE] TO RECONNECT</span>
+            </div>
+            <div
+                style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--phosphor-green); padding-bottom: 5px; margin-bottom:10px;">
+                <span>FILE: LEDGER_VOID_FINAL.SLS</span>
+                <span id="clock">06:66:00</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">SOUL ID</th>
+                        <th style="width: 25%;">PUNISHMENT</th>
+                        <th style="width: 15%;">ETA</th>
+                        <th style="width: 25%;">ATONEMENT</th>
+                        <th style="width: 15%;">VIBE</th>
+                    </tr>
+                </thead>
+                <tbody id="sheet-body"></tbody>
+            </table>
+            <div class="footer-nav">
+                [SPACE] MAINTAIN HANDSHAKE | [A] ADD | [B] BRIBE | [S] SEARCH
+            </div>
+        </div>
+
+        <div id="input-modal" class="modal">
+            <p id="modal-label">ENTER NAME:</p>
+            <input type="text" id="modal-input" style="width: 400px;">
+        </div>
+
+        <div id="demotivational-modal" class="modal demotivational">
+            <h2 style="margin-top:0;">MANDATORY REFLECTION</h2>
+            <p id="quote-text"></p>
+            <p style="font-size: 0.6em; margin-top:20px;">PRESS [X] TO ACCEPT YOUR FATE</p>
+        </div>
+    </div>
+
+    <script src="satan.js"></script>
+</body>
+
+</html>
