@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SATAN'S SPREADSHEETS - ADMIN CONSOLE</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="shortcut icon" href="favicon.ico">
+</head>
+
+<body>
+
+    <div id="monitor"
+        style="border-color: red; box-shadow: 0 0 60px rgba(255, 0, 0, 0.5), inset 0 0 100px rgba(255, 0, 0, 0.1);">
+        <!-- Reusing SVG symbols for consistency -->
+        <svg style="display:none;">
+            <symbol id="brimstone" viewBox="0 0 100 100">
+                <path d="M50 10v40M30 30h40M30 45h40M50 50c-15 0-20 15-5 15s20-15 35-15 10 15-5 15-20-15-25-15z"
+                    stroke="currentColor" stroke-width="5" fill="none" />
+            </symbol>
+            <symbol id="pentagram" viewBox="0 0 100 100">
+                <path d="M50 5 L61 38 H96 L68 59 L79 93 L50 72 L21 93 L32 59 L4 38 H39 Z" stroke="currentColor"
+                    stroke-width="3" fill="none" />
+                <circle cx="50" cy="55" r="40" stroke="currentColor" stroke-width="2" fill="none" />
+            </symbol>
+            <symbol id="chaos" viewBox="0 0 100 100">
+                <path d="M50 10 L50 90 M10 50 L90 50 M22 22 L78 78 M22 78 L78 22" stroke="currentColor"
+                    stroke-width="4" />
+                <path d="M50 5 L45 15 H55 Z M95 50 L85 45 V55 Z M50 95 L45 85 H55 Z M5 50 L15 45 V55 Z"
+                    fill="currentColor" />
+            </symbol>
+            <symbol id="void" viewBox="0 0 100 100">
+                <path
+                    d="M50 50 m-5 0 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0 M50 50 m-15 0 a 15 15 0 1 0 30 0 a 15 15 0 1 0 -30 0 M50 50 m-25 0 a 25 25 0 1 0 50 0 a 25 25 0 1 0 -50 0 M50 50 m-35 0 a 35 35 0 1 0 70 0 a 35 35 0 1 0 -70 0"
+                    stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="5,5" />
+            </symbol>
+        </svg>
+
+        <div id="sheet-screen" class="screen active">
+            <h1 style="color: red; text-align: center;">ADMINISTRATION CONSOLE</h1>
+            <div id="status-bar">
+                <span id="modem-text">MONITORING</span> |
+                <span id="handshake-warning" style="display:none;"></span>
+            </div>
+            <div
+                style="display:flex; justify-content: space-between; border-bottom: 1px solid red; padding-bottom: 5px; margin-bottom:10px;">
+                <span>ACCESS LEVEL: OMNIPOTENT</span>
+                <span id="clock">06:66:00</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%; background: #300;">SOUL ID</th>
+                        <th style="width: 25%; background: #300;">PUNISHMENT</th>
+                        <th style="width: 15%; background: #300;">ETA</th>
+                        <th style="width: 25%; background: #300;">ATONEMENT</th>
+                        <th style="width: 15%; background: #300;">VIBE</th>
+                    </tr>
+                </thead>
+                <tbody id="sheet-body"></tbody>
+            </table>
+            <div class="footer-nav" style="border-top-color: red;">
+                [SPACE] REFRESH | [A] SMITE | [B] BANISH | [S] SEARCH | [I] IMPORT | [H] HELP | [ESC] LOGOUT
+            </div>
+        </div>
+
+        <!-- Simplified modals for Admin for now -->
+        <div id="input-modal" class="modal" style="border-color: red;">
+            <p id="modal-label">COMMAND:</p>
+            <input type="text" id="modal-input" style="width: 400px; color: red; border-bottom-color: red;">
+        </div>
+
+        <div id="snick-modal" class="snick-modal" style="display:none;">
+            <img id="snick-img" src="" alt="Snick">
+            <div class="snick-bubble">
+                <p id="snick-dialog"></p>
+                <div id="snick-controls">
+                    <input type="text" id="snick-input" placeholder="Type answer...">
+                    <button id="snick-submit-btn">SUBMIT</button>
+                    <div id="snick-buttons" style="display:none;">
+                        <button id="snick-yes-btn">YES</button>
+                        <button id="snick-no-btn">NO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="satan.js"></script>
+</body>
+
+</html>

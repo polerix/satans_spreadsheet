@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SATAN'S SPREADSHEETS - Purgatory Edition</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="shortcut icon" href="favicon.ico">
+</head>
+
+<body>
+
+    <div id="monitor">
+        <!-- Reusing SVG symbols for consistency -->
+        <svg style="display:none;">
+            <symbol id="brimstone" viewBox="0 0 100 100">
+                <path d="M50 10v40M30 30h40M30 45h40M50 50c-15 0-20 15-5 15s20-15 35-15 10 15-5 15-20-15-25-15z"
+                    stroke="currentColor" stroke-width="5" fill="none" />
+            </symbol>
+            <symbol id="pentagram" viewBox="0 0 100 100">
+                <path d="M50 5 L61 38 H96 L68 59 L79 93 L50 72 L21 93 L32 59 L4 38 H39 Z" stroke="currentColor"
+                    stroke-width="3" fill="none" />
+                <circle cx="50" cy="55" r="40" stroke="currentColor" stroke-width="2" fill="none" />
+            </symbol>
+            <symbol id="chaos" viewBox="0 0 100 100">
+                <path d="M50 10 L50 90 M10 50 L90 50 M22 22 L78 78 M22 78 L78 22" stroke="currentColor"
+                    stroke-width="4" />
+                <path d="M50 5 L45 15 H55 Z M95 50 L85 45 V55 Z M50 95 L45 85 H55 Z M5 50 L15 45 V55 Z"
+                    fill="currentColor" />
+            </symbol>
+            <symbol id="void" viewBox="0 0 100 100">
+                <path
+                    d="M50 50 m-5 0 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0 M50 50 m-15 0 a 15 15 0 1 0 30 0 a 15 15 0 1 0 -30 0 M50 50 m-25 0 a 25 25 0 1 0 50 0 a 25 25 0 1 0 -50 0 M50 50 m-35 0 a 35 35 0 1 0 70 0 a 35 35 0 1 0 -70 0"
+                    stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="5,5" />
+            </symbol>
+        </svg>
+
+        <div id="sheet-screen" class="screen active">
+            <div id="status-bar">
+                <span id="modem-text">IDLE</span> |
+                <span id="handshake-warning">CARRIER DROPPED - MASH [SPACE] TO RECONNECT</span>
+            </div>
+            <div
+                style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--phosphor-green); padding-bottom: 5px; margin-bottom:10px;">
+                <span>FILE: LEDGER_VOID_FINAL.SLS</span>
+                <span id="clock">06:66:00</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">SOUL ID</th>
+                        <th style="width: 25%;">PUNISHMENT</th>
+                        <th style="width: 15%;">ETA</th>
+                        <th style="width: 25%;">ATONEMENT</th>
+                        <th style="width: 15%;">VIBE</th>
+                    </tr>
+                </thead>
+                <tbody id="sheet-body"></tbody>
+            </table>
+            <div class="footer-nav">
+                [SPACE] MAINTAIN HANDSHAKE | [A] ADD | [B] BRIBE | [S] SEARCH | [I] INDEX | [H] HELP | [U] ADMIN
+            </div>
+        </div>
+
+        <div id="input-modal" class="modal">
+            <p id="modal-label">ENTER NAME:</p>
+            <input type="text" id="modal-input" style="width: 400px;">
+        </div>
+
+        <div id="demotivational-modal" class="modal demotivational">
+            <h2 style="margin-top:0;">MANDATORY REFLECTION</h2>
+            <p id="quote-text"></p>
+            <p style="font-size: 0.6em; margin-top:20px;">PRESS [X] TO ACCEPT YOUR FATE</p>
+        </div>
+
+        <div id="snick-modal" class="snick-modal" style="display:none;">
+            <img id="snick-img" src="" alt="Snick">
+            <div class="snick-bubble">
+                <p id="snick-dialog"></p>
+                <div id="snick-controls">
+                    <input type="text" id="snick-input" placeholder="Type answer...">
+                    <button id="snick-submit-btn">SUBMIT</button>
+                    <div id="snick-buttons" style="display:none;">
+                        <button id="snick-yes-btn">YES</button>
+                        <button id="snick-no-btn">NO</button>
+                    </div>
+                    <div id="snick-help-buttons" style="display:none;">
+                        <button id="snick-abort-btn">ABORT</button>
+                        <button id="snick-retry-btn">RETRY</button>
+                        <button id="snick-resume-btn">RESUME</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="satan.js"></script>
+</body>
+
+</html>

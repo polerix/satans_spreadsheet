@@ -130,6 +130,27 @@ input {
     outline: none;
 }
 
+#login-btn {
+    background: transparent;
+    border: 2px solid var(--phosphor-green);
+    color: var(--phosphor-green);
+    padding: 10px 30px;
+    font-family: inherit;
+    font-size: 1.2em;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+#login-btn:hover {
+    background: var(--phosphor-green);
+    color: var(--bg-black);
+}
+
+#login-btn:active {
+    transform: translateY(2px);
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -206,14 +227,13 @@ th {
     z-index: 30;
 }
 
-.logo-img {
-    max-width: 80%;
-    width: 300px;
+.satan-logo {
+    max-width: 100%;
+    width: 200px;
     height: auto;
     margin-bottom: 20px;
-    /* Filter to make it red: specific hex #ff0000 approx */
-    filter: brightness(0) saturate(100%) invert(18%) sepia(90%) saturate(6666%) hue-rotate(358deg) brightness(98%) contrast(118%);
     opacity: 0.9;
+    /* Default Green Filter will be applied via JS or class */
 }
 
 /* SNICK STYLES */
@@ -330,121 +350,17 @@ th {
 }
 
 /* --- Failure Themes --- */
-.theme-yellow {
-    --primary-color: #ffff00;
-    --text-color: #ffff00;
-    --border-color: #ffff00;
+/* --- Failure Themes (Logo & Text) --- */
+.logo-green {
+    /* Green Filter for #33ff33 */
+    filter: invert(76%) sepia(61%) saturate(579%) hue-rotate(67deg) brightness(102%) contrast(104%);
 }
 
-.theme-orange {
-    --primary-color: #ffa500;
-    --text-color: #ffa500;
-    --border-color: #ffa500;
+.logo-yellow {
+    /* Yellow Filter */
+    filter: invert(89%) sepia(27%) saturate(6822%) hue-rotate(359deg) brightness(103%) contrast(104%);
 }
 
-.theme-red {
-    --primary-color: #ff0000;
-    --text-color: #ff0000;
-    --border-color: #ff0000;
-    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
-}
-
-@keyframes shake {
-
-    10%,
-    90% {
-        transform: translate3d(-1px, 0, 0);
-    }
-
-    20%,
-    80% {
-        transform: translate3d(2px, 0, 0);
-    }
-
-    30%,
-    50%,
-    70% {
-        transform: translate3d(-4px, 0, 0);
-    }
-
-    40%,
-    60% {
-        transform: translate3d(4px, 0, 0);
-    }
-}
-
-/* --- Lockout Overlay --- */
-#lockout-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: black;
-    color: red;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    font-family: 'Courier New', Courier, monospace;
-    text-align: center;
-}
-
-#lockout-overlay h1 {
-    font-size: 3em;
-    margin-bottom: 20px;
-    animation: glitch 1s infinite linear alternate-reverse;
-}
-
-.reversed {
-    transform: scaleX(-1);
-    display: inline-block;
-}
-
-.edit-mode {
-    background-color: #500;
-    color: #fff;
-    outline: 2px solid red;
-}
-
-#snick-submit-btn:hover,
-#snick-yes-btn:hover,
-#snick-no-btn:hover,
-#snick-abort-btn:hover,
-#snick-retry-btn:hover,
-#snick-resume-btn:hover {
-    background: #333;
-}
-
-/* EFFECTS */
-.cursed-font,
-.cursed-font * {
-    font-family: 'Zapfino', 'Wingdings', 'Papyrus', cursive !important;
-    text-shadow: 2px 2px red;
-}
-
-.rgb-cycle {
-    animation: rgb-freakout 0.2s infinite;
-}
-
-@keyframes rgb-freakout {
-    0% {
-        color: red;
-        text-shadow: 2px 2px blue;
-    }
-
-    33% {
-        color: green;
-        text-shadow: -2px 2px red;
-    }
-
-    66% {
-        color: blue;
-        text-shadow: 2px -2px green;
-    }
-
-    100% {
-        color: red;
-        text-shadow: 2px 2px blue;
-    }
-}
+.logo-orange {
+    /* Orange Filter */
+    filter: invert(66%) sepia(35%) saturate(3018%) hue-rotate(360deg) br

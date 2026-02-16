@@ -4,167 +4,30 @@ let PUNISHMENTS = [];
 let DURATIONS = [];
 let ATONEMENTS = [];
 let VIBES = [];
-let QUOTES = [];
-let RIDDLES = [];
-let EXISTENTIAL_QUOTES = [];
+let QUOTES = []; // Demotivational
+let RIDDLES = []; // Snick
+let EXISTENTIAL_QUOTES = []; // Snick Help
 let SECRETS = { users: [], defaultPattern: "666" };
 let initialSoulsData = [];
 
-// --- HANDSHAKE & AUDIO GLOBALS ---
-let handshakeBuffer = 100;
-let isConnectionLost = false;
-let audioCtx = null;
-let pendingBribeAction = false;
-let currentRiddle = null;
-
-// Initialize Audio Context
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-}
-
-// Audio Functions
-function playTypeSound(freq = 800) {
-    if (!audioCtx) initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.value = freq;
-    osc.type = 'square';
-    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.05);
-}
-
-function playDataStream() {
-    if (!audioCtx) initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.value = Math.random() * 200 + 600;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.02);
-}
-
-function playSnickPop() {
-    if (!audioCtx) initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.value = 600;
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.1);
-}
-
-function playSnickSuccess() {
-    if (!audioCtx) initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-    osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.2);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.2);
-}
-
-function playSnickFail() {
-    if (!audioCtx) initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-    osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.3);
-}
-
-function playSnickLaugh() {
-    if (!audioCtx) initAudio();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-    osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
-    osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.2);
-    osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.3);
-}
-
-// Curse function
-function curse(text, strength = 1) {
-    let result = '';
-    for (let char of text) {
-        if (Math.random() < 0.05 * strength) {
-            const glitchChars = '█▓▒░@#$%&*';
-            result += glitchChars[Math.floor(Math.random() * glitchChars.length)];
-        } else {
-            result += char;
-        }
-    }
-    return result;
-}
-
-// Handshake effect
-function spawnHandshakeEffect() {
-    const symbols = ['brimstone', 'pentagram', 'chaos', 'void'];
-    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-    
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.classList.add('alchemy-sigil', 'fly-away');
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.style.setProperty('--tw-x', `${(Math.random() - 0.5) * 200}px`);
-    svg.style.setProperty('--tw-y', `${(Math.random() - 0.5) * 200}px`);
-    
-    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', `#${symbol}`);
-    svg.appendChild(use);
-    
-    document.getElementById('monitor').appendChild(svg);
-    
-    setTimeout(() => svg.remove(), 2000);
-}
-
 // --- FETCH DATA ---
-let dataLoaded = false;
-
 Promise.all([
     fetch('riddles.json').then(r => r.json()),
     fetch('damned.csv').then(r => r.text()),
     fetch('secret.json').then(r => r.json())
 ]).then(([riddles, csv, secrets]) => {
     // 1. Riddles & Content
-    NAMES = riddles.names || [];
-    PUNISHMENTS = riddles.punishments || [];
-    DURATIONS = riddles.durations || [];
-    ATONEMENTS = riddles.atonements || [];
-    VIBES = riddles.vibes || [];
-    QUOTES = riddles.quotes || [];
-    RIDDLES = riddles.riddles || [];
-    EXISTENTIAL_QUOTES = riddles.existential_quotes || [];
+    NAMES = riddles.names;
+    PUNISHMENTS = riddles.punishments;
+    DURATIONS = riddles.durations;
+    ATONEMENTS = riddles.atonements;
+    VIBES = riddles.vibes;
+    QUOTES = riddles.quotes;
+    RIDDLES = riddles.riddles;
 
     // 2. CSV Data
     const lines = csv.trim().split('\n');
+    // Skip header (row 0)
     for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(',');
         if (cols.length >= 5) {
@@ -181,21 +44,20 @@ Promise.all([
     // 3. Secrets
     SECRETS = secrets;
 
-    dataLoaded = true;
-    console.log("Hell loaded successfully.");
-    console.log("Loaded souls:", initialSoulsData.length);
-    console.log("Loaded riddles:", RIDDLES.length);
+    console.log("Hell loaded.");
 
+    // Check for existing lockout on load
     checkLockout();
 }).catch(err => {
     console.error("Failed to load resources:", err);
-    alert("ERROR: Failed to load infernal database. Check console.");
+    // Fallback?
 });
 
 function checkLockout() {
     const lockoutUntil = parseInt(localStorage.getItem('lockoutUntil') || 0);
     if (Date.now() < lockoutUntil) {
         document.getElementById('lockout-overlay').style.display = 'flex';
+        // Timer Loop
         const timerInterval = setInterval(() => {
             const diff = lockoutUntil - Date.now();
             if (diff <= 0) {
@@ -215,17 +77,19 @@ function checkLockout() {
 
 let souls = [];
 let selectedRow = 0;
-let selectedCol = 0;
-let isEditMode = false;
+let selectedCol = 0; // 0:Name, 1:Punishment, 2:Duration, 3:Atonement, 4:Vibe
+let isEditMode = false; // For dropdown/modification
 let currentMode = 'login';
-let loginUser = 'SINNER';
+let loginUser = 'SINNER'; // 'SINNER' or 'ADMIN'
 let isRendering = false;
+
+// ... (Handshake/Audio/Curse/Alchemy unchanged) ...
 
 // --- RENDERER ---
 async function slowRender(filter = "") {
     if (isRendering) return;
     isRendering = true;
-    handshakeBuffer = 50;
+    handshakeBuffer = 50; // Start with some signal
 
     const headers = ["SOUL ID", "PUNISHMENT", "ETA", "ATONEMENT", "VIBE"];
     const thead = document.querySelector('thead');
@@ -242,12 +106,14 @@ async function slowRender(filter = "") {
         const tr = document.createElement('tr');
         tbody.appendChild(tr);
 
+        // Map soul properties to columns
         const fields = [curse(soul.name), soul.punishment, soul.duration, curse(soul.atonement), soul.status];
 
         for (let c = 0; c < fields.length; c++) {
             const field = fields[c];
             const td = document.createElement('td');
 
+            // Highlight Selection
             if (currentMode === 'sheet' && r === selectedRow && c === selectedCol) {
                 td.classList.add('reverse-cell');
                 if (isEditMode) td.classList.add('edit-mode');
@@ -256,18 +122,20 @@ async function slowRender(filter = "") {
             tr.appendChild(td);
             const chars = Array.from(field);
             for (let char of chars) {
+                // HANDSHAKE CHECK (unchanged)
                 while (handshakeBuffer <= 0) {
+                    // ...
                     isConnectionLost = true;
                     document.getElementById('handshake-warning').style.visibility = 'visible';
                     document.getElementById('modem-text').innerText = "NO CARRIER";
-                    await new Promise(r => setTimeout(r, 100));
+                    await new Promise(r => setTimeout(r, 100)); // Wait for spacebar
                 }
                 isConnectionLost = false;
                 document.getElementById('handshake-warning').style.visibility = 'hidden';
-                document.getElementById('modem-text').innerText = "RECEIVING (" + Math.floor(handshakeBuffer) + "%)";
+                document.getElementById('modem-text').innerText = "RECEIVING (" + handshakeBuffer + "%)";
 
                 td.textContent += char;
-                handshakeBuffer -= (Math.random() * 2 + 0.5);
+                handshakeBuffer -= (Math.random() * 2 + 0.5); // Signal decays chaotically
                 playDataStream();
                 await new Promise(r => setTimeout(r, 33));
             }
@@ -277,28 +145,9 @@ async function slowRender(filter = "") {
     document.getElementById('modem-text').innerText = "IDLE";
 }
 
-// CSV Export Function
-function saveToCSV() {
-    const headers = "SOUL ID,PUNISHMENT,ETA,ATONEMENT,VIBE\n";
-    const rows = souls.map(s => `${s.name},${s.punishment},${s.duration},${s.atonement},${s.status}`).join('\n');
-    const csvContent = headers + rows;
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'damned.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    playSnickSuccess();
-    alert('CSV EXPORTED TO DOWNLOADS');
-}
-
 // --- CONTROLS ---
 document.addEventListener('keydown', (e) => {
-    if (!audioCtx) initAudio();
-
+    // Spacebar Handshake (requires NO SHIFT)
     if (e.code === 'Space' && !e.shiftKey) {
         e.preventDefault();
         handshakeBuffer = Math.min(handshakeBuffer + 20, 100);
@@ -310,102 +159,55 @@ document.addEventListener('keydown', (e) => {
     if (isRendering && currentMode !== 'login') return;
     playTypeSound();
 
+    // Check Lockout on every keydown (or just init)
     if (Date.now() < parseInt(localStorage.getItem('lockoutUntil') || 0)) {
         e.preventDefault();
         return;
     }
 
     if (currentMode === 'login') {
-        const userSpan = document.getElementById('login-user');
         const userInput = document.getElementById('userInput');
         const passInput = document.getElementById('passInput');
 
-        userInput.addEventListener('input', () => {
-            loginUser = userInput.value.toUpperCase() || 'SINNER';
-            userSpan.innerText = loginUser;
-            userSpan.classList.add('reversed');
-        });
-
+        // Focus User Logic (Shortcut 'U')
         if (e.key.toLowerCase() === 'u' && document.activeElement !== userInput && document.activeElement !== passInput) {
             userInput.focus();
             e.preventDefault();
-            return;
         }
 
+        // Enter Key Logic
         if (e.key === 'Enter') {
+            // If on User Input, move to Password
             if (document.activeElement === userInput) {
                 passInput.focus();
                 return;
             }
-
-            if (!dataLoaded) {
-                alert('LOADING INFERNAL DATABASE... PLEASE WAIT');
-                return;
-            }
-
-            const pass = passInput.value;
-            let success = false;
-
-            const targetUser = SECRETS.users.find(u => u.username === loginUser);
-            if (targetUser) {
-                if (pass === targetUser.password) success = true;
-            } else {
-                if (pass === SECRETS.defaultPattern) success = true;
-            }
-
-            if (success) {
-                document.getElementById('login-screen').classList.remove('active');
-                document.getElementById('sheet-screen').classList.add('active');
-                currentMode = 'sheet';
-
-                localStorage.removeItem('loginFailures');
-                document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
-
-                initData();
-                playSnickSuccess();
-            } else {
-                passInput.value = '';
-                playSnickFail();
-
-                let fails = parseInt(localStorage.getItem('loginFailures') || 0) + 1;
-                localStorage.setItem('loginFailures', fails);
-
-                if (fails === 1) {
-                    document.body.classList.add('theme-yellow');
-                } else if (fails === 2) {
-                    document.body.classList.remove('theme-yellow');
-                    document.body.classList.add('theme-orange');
-                } else if (fails >= 3) {
-                    document.body.classList.remove('theme-orange');
-                    document.body.classList.add('theme-red');
-
-                    const lockoutTime = Date.now() + 20 * 60 * 1000;
-                    localStorage.setItem('lockoutUntil', lockoutTime);
-                    checkLockout();
-                }
-            }
+            handleLoginAttempt();
         }
     }
     else if (currentMode === 'sheet') {
         const soul = souls[selectedRow];
 
         if (isEditMode) {
+            // EDIT MODE CONTROLS
             if (e.key === 'x' || e.key === 'X') {
                 isEditMode = false;
-                slowRender();
+                slowRender(); // Re-render to remove edit style
                 return;
             }
 
-            if (selectedCol === 1) {
+            if (selectedCol === 1) { // PUNISHMENT COLUMN
                 let idx = PUNISHMENTS.indexOf(soul.punishment);
                 if (e.key === 'ArrowDown') idx = (idx + 1) % PUNISHMENTS.length;
                 if (e.key === 'ArrowUp') idx = (idx - 1 + PUNISHMENTS.length) % PUNISHMENTS.length;
                 soul.punishment = PUNISHMENTS[idx];
 
+                // Direct DOM update for speed
                 const cell = document.getElementById('sheet-body').children[selectedRow].children[1];
                 cell.innerText = soul.punishment;
             }
         } else {
+            // NAVIGATION MODE
             if (e.key === 'ArrowDown') {
                 selectedRow = Math.min(selectedRow + 1, souls.length - 1);
                 slowRender();
@@ -436,7 +238,7 @@ document.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 's' && !e.shiftKey) openModal("SEARCH DATABASE:");
             if (e.key.toLowerCase() === 'i') initData();
             if (e.key.toLowerCase() === 'h') triggerSnick('help');
-            if (e.key === 'S' && e.shiftKey) saveToCSV();
+            if (e.key === 'S' && e.shiftKey) saveToCSV(); // Shift+S to Save
             if (e.key === 'Escape') location.reload();
         }
     }
@@ -444,13 +246,7 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const val = document.getElementById('modal-input').value;
             if (document.getElementById('modal-label').innerText.includes("ADD")) {
-                souls.push({ 
-                    name: val.toUpperCase(), 
-                    punishment: PUNISHMENTS[0], 
-                    duration: DURATIONS[0], 
-                    atonement: ATONEMENTS[0], 
-                    status: "ROTTING" 
-                });
+                souls.push({ name: val.toUpperCase(), punishment: PUNISHMENTS[0], duration: DURATIONS[0], atonement: ATONEMENTS[0], status: "ROTTING" });
             }
             closeModal();
             slowRender(val.length > 0 && !document.getElementById('modal-label').innerText.includes("ADD") ? val : "");
@@ -466,9 +262,13 @@ document.addEventListener('keydown', (e) => {
 });
 
 function initData() {
+    // If we have CSV data, use it. Otherwise fallback to random (or empty if NAMES not loaded)
     if (initialSoulsData.length > 0) {
+        // Deep copy to allow modification without affecting the "Reset" state? 
+        // actually initData IS the reset. So we copy from initial.
         souls = JSON.parse(JSON.stringify(initialSoulsData));
     } else {
+        // Fallback if CSV failed or not loaded yet
         souls = NAMES.map(name => ({
             name: name,
             punishment: PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)],
@@ -480,19 +280,24 @@ function initData() {
 
     slowRender();
 
+    // Automated Vibe Cycling
     setInterval(() => {
-        if (currentMode === 'sheet' && souls.length > 0 && VIBES.length > 0) {
+        if (currentMode === 'sheet' && souls.length > 0) {
+            // Pick a random soul and change their vibe
             const r = Math.floor(Math.random() * souls.length);
-            souls[r].status = VIBES[Math.floor(Math.random() * VIBES.length)];
-            if (!isRendering) {
-                const tbody = document.getElementById('sheet-body');
-                if (tbody && tbody.children[r] && tbody.children[r].children[4]) {
-                    tbody.children[r].children[4].innerText = souls[r].status;
-                    playDataStream();
+            if (VIBES.length > 0) {
+                souls[r].status = VIBES[Math.floor(Math.random() * VIBES.length)];
+                // Update DOM directly
+                if (!isRendering) {
+                    const tbody = document.getElementById('sheet-body');
+                    if (tbody && tbody.children[r] && tbody.children[r].children[4]) {
+                        tbody.children[r].children[4].innerText = souls[r].status;
+                        playDataStream(); // Small blip
+                    }
                 }
             }
         }
-    }, 2000);
+    }, 2000); // Change a vibe every 2 seconds
 
     setInterval(() => {
         if (currentMode === 'sheet' && !isRendering && Math.random() > 0.8 && QUOTES.length > 0) {
@@ -507,7 +312,6 @@ function openModal(text) {
     currentMode = 'modal';
     document.getElementById('modal-label').innerText = text;
     document.getElementById('input-modal').style.display = 'block';
-    document.getElementById('modal-input').value = '';
     document.getElementById('modal-input').focus();
 }
 
@@ -532,9 +336,11 @@ const SNICK_IMGS = {
     'bribe': 'images/snick_bribe.png',
     'goosechase': 'images/snick_goosechase.png',
     'laugh': 'images/snick_laugh.png',
+    'laugh': 'images/snick_laugh.png',
     'time': 'images/snick_time.png',
     'help': 'images/snick_laugh.png'
 };
+// EXISTENTIAL_QUOTES removed (now var)
 
 function triggerSnick(forceScenario = null) {
     if (snickActive || (currentMode !== 'sheet' && !forceScenario)) return;
@@ -542,9 +348,12 @@ function triggerSnick(forceScenario = null) {
     currentSnickScenario = forceScenario || SNICK_SCENARIOS[Math.floor(Math.random() * SNICK_SCENARIOS.length)];
     playSnickPop();
 
+    // Setup UI
     document.getElementById('snick-modal').style.display = 'flex';
     document.getElementById('snick-img').src = SNICK_IMGS[currentSnickScenario];
     document.getElementById('snick-input').value = '';
+    document.getElementById('snick-input').style.display = 'none';
+    document.getElementById('snick-submit-btn').style.display = 'none';
     document.getElementById('snick-input').style.display = 'none';
     document.getElementById('snick-submit-btn').style.display = 'none';
     document.getElementById('snick-buttons').style.display = 'none';
@@ -567,12 +376,10 @@ function triggerSnick(forceScenario = null) {
         document.getElementById('snick-dialog').innerText = "QUICK! What time is it (seconds only)? Be within 3 seconds!";
         document.getElementById('snick-input').style.display = 'block';
         document.getElementById('snick-submit-btn').style.display = 'block';
+        document.getElementById('snick-submit-btn').style.display = 'block';
         document.getElementById('snick-input').focus();
     } else if (currentSnickScenario === 'help') {
-        const quote = EXISTENTIAL_QUOTES.length > 0 
-            ? EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)]
-            : "ERROR: EXISTENTIAL CRISIS NOT FOUND";
-        document.getElementById('snick-dialog').innerText = quote;
+        document.getElementById('snick-dialog').innerText = EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)];
         document.getElementById('snick-help-buttons').style.display = 'block';
     }
 }
@@ -581,6 +388,7 @@ function handleSnickAnswer() {
     const val = document.getElementById('snick-input').value.trim().toLowerCase();
 
     if (currentSnickScenario === 'goosechase' || (currentSnickScenario === 'bribe' && document.getElementById('snick-input').style.display !== 'none')) {
+        // Check against current riddle answers
         if (currentRiddle && currentRiddle.a.includes(val)) {
             resolveConnection();
             alertSnick("Fine. Connection restored.", true);
@@ -628,6 +436,7 @@ function closeSnick() {
     snickActive = false;
     currentSnickScenario = null;
     pendingBribeAction = false;
+    document.getElementById('passInput').focus(); // Refocus just in case
 }
 
 function resolveConnection() {
@@ -647,12 +456,28 @@ function applyRGBCycle() {
     }, 20000);
 }
 
-document.getElementById('snick-submit-btn').addEventListener('click', handleSnickAnswer);
-document.getElementById('snick-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleSnickAnswer();
-});
+function playSnickLaugh() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+    osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.2);
+    osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.3);
 
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+
+// Snick Event Listeners
+document.getElementById('snick-submit-btn').addEventListener('click', handleSnickAnswer);
 document.getElementById('snick-yes-btn').addEventListener('click', () => {
+    // Bribe Accepted -> Transition to Riddle
     currentSnickScenario = 'goosechase';
     currentRiddle = RIDDLES[Math.floor(Math.random() * RIDDLES.length)];
     document.getElementById('snick-dialog').innerText = "Excellent. Solve this: " + currentRiddle.q;
@@ -661,27 +486,63 @@ document.getElementById('snick-yes-btn').addEventListener('click', () => {
     document.getElementById('snick-submit-btn').style.display = 'block';
     document.getElementById('snick-input').focus();
 });
-
 document.getElementById('snick-no-btn').addEventListener('click', () => {
+    // Bribe Rejected -> Goosechase (Curse)
     applyCurse();
     alertSnick("Big mistake. Have a curse.", true);
 });
 
+// Help Button Listeners
 document.getElementById('snick-abort-btn').addEventListener('click', () => {
-    location.reload();
+    location.reload(); // Returns to login/start
 });
-
 document.getElementById('snick-retry-btn').addEventListener('click', () => {
-    const quote = EXISTENTIAL_QUOTES.length > 0 
-        ? EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)]
-        : "ERROR: EXISTENTIAL CRISIS NOT FOUND";
-    document.getElementById('snick-dialog').innerText = quote;
+    document.getElementById('snick-dialog').innerText = EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)];
 });
-
 document.getElementById('snick-resume-btn').addEventListener('click', closeSnick);
 
+// Remove curse on new data entry
 setInterval(() => {
+    // Random Snick Trigger (low chance)
     if (Math.random() > 0.95 && !snickActive && currentMode === 'sheet') {
         triggerSnick();
     }
 }, 15000);
+
+// --- INITIALIZATION ---
+// Detect Page
+const isLoginPage = !!document.getElementById('login-screen');
+const isSheetPage = !!document.getElementById('sheet-body') && !document.title.includes("ADMIN");
+const isAdminPage = document.title.includes("ADMIN");
+
+if (isLoginPage) {
+    currentMode = 'login';
+    checkLockout();
+    // Hook up login buttons
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) loginBtn.addEventListener('click', handleLoginAttempt);
+} else {
+    currentMode = 'sheet';
+    // Load Data immediately
+    initData();
+    // Start Audio Context on first interaction if needed
+    document.body.addEventListener('click', () => {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }, { once: true });
+}
+
+// Hook into existing modal closing for curse removal
+const originalCloseModal = closeModal;
+closeModal = function () {
+    if (originalCloseModal) originalCloseModal();
+    if (cursedFontActive && document.getElementById('modal-label').innerText.includes("ADD") && document.getElementById('modal-input').value.length > 0) {
+        cursedFontActive = false;
+        document.body.classList.remove('cursed-font');
+    }
+};
+
+// Login Logic Refactored
+function handleLoginAttempt() {
+    const userInput = document.g
