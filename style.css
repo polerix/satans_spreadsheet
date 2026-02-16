@@ -205,13 +205,3 @@ th {
     max-width: 450px;
     z-index: 30;
 }
-
-.logo-img {
-    max-width: 80%;
-    width: 300px;
-    height: auto;
-    margin-bottom: 20px;
-    /* Filter to make it red: specific hex #ff0000 approx */
-    filter: brightness(0) saturate(100%) invert(18%) sepia(90%) saturate(6666%) hue-rotate(358deg) brightness(98%) contrast(118%);
-    opacity: 0.9;
-}

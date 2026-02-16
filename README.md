@@ -35,18 +35,38 @@ Text in the application is processed through a distortion engine that adds combi
 - Displays despair-inducing quotes.
 - You must press `[X]` to accept your fate and continue working.
 
+### 6. Snick the Assistant (NEW)
+**"I can fix this... IF you answer my riddle!"**
+
+A helpful (?) paperclip-adjacent entity that monitors your struggle.
+-   **Triggers**: Randomly appears during usage, or when summoned via `[B]` (Bribe) or `[H]` (Help).
+-   **Scenarios**:
+    -   **Bribe**: Offers to fix your connection for a price. Accepting triggers a Riddle. A correct answer grants `VIP` status and restores connection. A wrong answer brings curses.
+    -   **Riddle**: "What has keys but no locks?" (and 3 others). Solved? Connection restored. Failed? `cursed-font` applied globally.
+    -   **Time Check**: Demands the current time (seconds). Be precise or face the **RGB Cycle**.
+    -   **Existential Help**: Provides motivational quotes like "404: Meaning of Life Not Found."
+
+### 7. Controls & shortcuts
+-   **[SPACE]**: Maintain Handshake (simulates connection).
+-   **[SHIFT] + [SPACE]**: Type a literal space character.
+-   **[I]**: Index - Reset the spreadsheet data and view.
+-   **[H]**: Help - Summon Snick for existential support.
+-   **[A]**: Add a new soul.
+-   **[B]**: Bribe - Trigger Snick's Bribe scenario.
+-   **[S]**: Search the database.
+
 ## Technical Specifications
-- **Stack**: Vanilla HTML5, CSS3, JavaScript (ES6+).
-- **No Dependencies**: Runs on pure malice and standard browser APIs.
-- **Files**:
-    - `index.html`: The skeleton of the beast.
-    - `style.css`: The skin (visual styling).
-    - `satan.js`: The brain (logic and suffering).
+-   **Stack**: Vanilla HTML5, CSS3, JavaScript (ES6+).
+-   **No Dependencies**: Runs on pure malice and standard browser APIs.
+-   **Files**:
+    -   `index.html`: The skeleton of the beast.
+    -   `style.css`: The skin (visual styling).
+    -   `satan.js`: The brain (logic and suffering).
 
 ## Installation
-1. Clone the repository.
-2. Open `index.html` in any modern web browser.
-3. **DO NOT** toggle full screen. He likes to watch.
+1.  Clone the repository.
+2.  Open `index.html` in any modern web browser.
+3.  **DO NOT** toggle full screen. He likes to watch.
 
 ---
 *Est. 2026 - The Underworld Corp.*

@@ -132,14 +132,19 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowDown') selectedRow = Math.min(selectedRow + 1, souls.length - 1);
         if (e.key === 'ArrowUp') selectedRow = Math.max(selectedRow - 1, 0);
         if (e.key.toLowerCase() === 'b') {
-            const bribe = souls.splice(selectedRow, 1)[0];
-            bribe.status = curse("VIP");
-            souls.unshift(bribe);
-            selectedRow = 0;
-            slowRender();
+            pendingBribeAction = true;
+            triggerSnick('bribe');
         }
         if (e.key.toLowerCase() === 'a') openModal("ADD NEW DAMNED:");
         if (e.key.toLowerCase() === 's') openModal("SEARCH DATABASE:");
+        if (e.key.toLowerCase() === 'i') {
+            // INDEX: Reset and Reload
+            initData();
+        }
+        if (e.key.toLowerCase() === 'h') {
+            // HELP: Snick Existential Crisis
+            triggerSnick('help');
+        }
         if (e.key === 'Escape') location.reload();
     }
     else if (currentMode === 'modal') {
@@ -196,3 +201,198 @@ setInterval(() => {
     const now = new Date();
     document.getElementById('clock').innerText = `06:66:${now.getSeconds().toString().padStart(2, '0')}`;
 }, 1000);
+
+// --- SNICK THE ASSISTANT ---
+let snickActive = false;
+let cursedFontActive = false;
+let currentSnickScenario = null;
+
+const SNICK_SCENARIOS = ['bribe', 'goosechase', 'laugh', 'time'];
+const SNICK_IMGS = {
+    'bribe': 'images/snick_bribe.png',
+    'goosechase': 'images/snick_goosechase.png',
+    'laugh': 'images/snick_laugh.png',
+    'laugh': 'images/snick_laugh.png',
+    'time': 'images/snick_time.png',
+    'help': 'images/snick_laugh.png'
+};
+
+const EXISTENTIAL_QUOTES = [
+    "You want help? Try creating a universe that cares.",
+    "The delete key is right there. It ends the pain.",
+    "404: Meaning of Life Not Found.",
+    "We are but dust in a digital wind.",
+    "Your spreadsheet has more purpose than you."
+];
+
+function triggerSnick(forceScenario = null) {
+    if (snickActive || (currentMode !== 'sheet' && !forceScenario)) return;
+    snickActive = true;
+    currentSnickScenario = forceScenario || SNICK_SCENARIOS[Math.floor(Math.random() * SNICK_SCENARIOS.length)];
+
+    // Setup UI
+    document.getElementById('snick-modal').style.display = 'flex';
+    document.getElementById('snick-img').src = SNICK_IMGS[currentSnickScenario];
+    document.getElementById('snick-input').value = '';
+    document.getElementById('snick-input').style.display = 'none';
+    document.getElementById('snick-submit-btn').style.display = 'none';
+    document.getElementById('snick-input').style.display = 'none';
+    document.getElementById('snick-submit-btn').style.display = 'none';
+    document.getElementById('snick-buttons').style.display = 'none';
+    document.getElementById('snick-help-buttons').style.display = 'none';
+
+    if (currentSnickScenario === 'bribe') {
+        document.getElementById('snick-dialog').innerText = "Looks like you're having connection issues! Want to bribe me to fix it?";
+        document.getElementById('snick-buttons').style.display = 'block';
+    } else if (currentSnickScenario === 'goosechase') {
+        currentRiddle = RIDDLES[Math.floor(Math.random() * RIDDLES.length)];
+        document.getElementById('snick-dialog').innerText = "I can fix this... IF you answer my riddle! " + currentRiddle.q;
+        document.getElementById('snick-input').style.display = 'block';
+        document.getElementById('snick-submit-btn').style.display = 'block';
+        document.getElementById('snick-input').focus();
+    } else if (currentSnickScenario === 'laugh') {
+        document.getElementById('snick-dialog').innerText = "Hahaha! Your suffering is data to us!";
+        playSnickLaugh();
+        setTimeout(closeSnick, 3000);
+    } else if (currentSnickScenario === 'time') {
+        document.getElementById('snick-dialog').innerText = "QUICK! What time is it (seconds only)? Be within 3 seconds!";
+        document.getElementById('snick-input').style.display = 'block';
+        document.getElementById('snick-submit-btn').style.display = 'block';
+        document.getElementById('snick-submit-btn').style.display = 'block';
+        document.getElementById('snick-input').focus();
+    } else if (currentSnickScenario === 'help') {
+        document.getElementById('snick-dialog').innerText = EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)];
+        document.getElementById('snick-help-buttons').style.display = 'block';
+    }
+}
+
+function handleSnickAnswer() {
+    const val = document.getElementById('snick-input').value.trim().toLowerCase();
+
+    if (currentSnickScenario === 'goosechase' || (currentSnickScenario === 'bribe' && document.getElementById('snick-input').style.display !== 'none')) {
+        // Check against current riddle answers
+        if (currentRiddle && currentRiddle.a.includes(val)) {
+            resolveConnection();
+            alertSnick("Fine. Connection restored.", true);
+
+            if (pendingBribeAction) {
+                const bribe = souls.splice(selectedRow, 1)[0];
+                bribe.status = curse("VIP");
+                souls.unshift(bribe);
+                selectedRow = 0;
+                slowRender();
+                pendingBribeAction = false;
+            }
+        } else {
+            applyCurse();
+            alertSnick("WRONG! Enjoy the curse.", true);
+            pendingBribeAction = false;
+        }
+    } else if (currentSnickScenario === 'time') {
+        const seconds = new Date().getSeconds();
+        const inputSec = parseInt(val);
+        if (!isNaN(inputSec) && Math.abs(inputSec - seconds) <= 3) {
+            resolveConnection();
+            alertSnick("Acceptable.", true);
+        } else {
+            applyRGBCycle();
+            alertSnick("TOO SLOW! BURN IN RGB!", true);
+        }
+    }
+}
+
+function alertSnick(msg, autoClose) {
+    document.getElementById('snick-dialog').innerText = msg;
+    document.getElementById('snick-input').style.display = 'none';
+    document.getElementById('snick-submit-btn').style.display = 'none';
+    document.getElementById('snick-buttons').style.display = 'none';
+    if (autoClose) setTimeout(closeSnick, 2000);
+}
+
+function closeSnick() {
+    document.getElementById('snick-modal').style.display = 'none';
+    snickActive = false;
+    currentSnickScenario = null;
+    pendingBribeAction = false;
+    document.getElementById('passInput').focus(); // Refocus just in case
+}
+
+function resolveConnection() {
+    handshakeBuffer = 100;
+    document.getElementById('handshake-warning').style.visibility = 'hidden';
+}
+
+function applyCurse() {
+    cursedFontActive = true;
+    document.body.classList.add('cursed-font');
+}
+
+function applyRGBCycle() {
+    document.body.classList.add('rgb-cycle');
+    setTimeout(() => {
+        document.body.classList.remove('rgb-cycle');
+    }, 20000);
+}
+
+function playSnickLaugh() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+    osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 0.2);
+    osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.3);
+
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+
+// Snick Event Listeners
+document.getElementById('snick-submit-btn').addEventListener('click', handleSnickAnswer);
+document.getElementById('snick-yes-btn').addEventListener('click', () => {
+    // Bribe Accepted -> Transition to Riddle
+    currentSnickScenario = 'goosechase';
+    currentRiddle = RIDDLES[Math.floor(Math.random() * RIDDLES.length)];
+    document.getElementById('snick-dialog').innerText = "Excellent. Solve this: " + currentRiddle.q;
+    document.getElementById('snick-buttons').style.display = 'none';
+    document.getElementById('snick-input').style.display = 'block';
+    document.getElementById('snick-submit-btn').style.display = 'block';
+    document.getElementById('snick-input').focus();
+});
+document.getElementById('snick-no-btn').addEventListener('click', () => {
+    // Bribe Rejected -> Goosechase (Curse)
+    applyCurse();
+    alertSnick("Big mistake. Have a curse.", true);
+});
+
+// Help Button Listeners
+document.getElementById('snick-abort-btn').addEventListener('click', () => {
+    location.reload(); // Returns to login/start
+});
+document.getElementById('snick-retry-btn').addEventListener('click', () => {
+    document.getElementById('snick-dialog').innerText = EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)];
+});
+document.getElementById('snick-resume-btn').addEventListener('click', closeSnick);
+
+// Remove curse on new data entry
+setInterval(() => {
+    // Random Snick Trigger (low chance)
+    if (Math.random() > 0.95 && !snickActive && currentMode === 'sheet') {
+        triggerSnick();
+    }
+}, 15000);
+
+// Hook into existing modal closing for curse removal
+const originalCloseModal = closeModal;
+closeModal = function () {
+    originalCloseModal();
+    if (cursedFontActive && document.getElementById('modal-label').innerText.includes("ADD") && document.getElementById('modal-input').value.length > 0) {
+        cursedFontActive = false;
+        document.body.classList.remove('cursed-font');
+    }
+};
