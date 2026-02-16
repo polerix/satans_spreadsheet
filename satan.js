@@ -129,19 +129,19 @@ function curse(text, strength = 1) {
 function spawnHandshakeEffect() {
     const symbols = ['brimstone', 'pentagram', 'chaos', 'void'];
     const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-    
+
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.classList.add('alchemy-sigil', 'fly-away');
     svg.setAttribute('viewBox', '0 0 100 100');
     svg.style.setProperty('--tw-x', `${(Math.random() - 0.5) * 200}px`);
     svg.style.setProperty('--tw-y', `${(Math.random() - 0.5) * 200}px`);
-    
+
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
     use.setAttribute('href', `#${symbol}`);
     svg.appendChild(use);
-    
+
     document.getElementById('monitor').appendChild(svg);
-    
+
     setTimeout(() => svg.remove(), 2000);
 }
 
@@ -217,8 +217,17 @@ let souls = [];
 let selectedRow = 0;
 let selectedCol = 0;
 let isEditMode = false;
-let currentMode = 'login';
+let currentMode = document.getElementById('login-screen') ? 'login' : 'sheet';
 let loginUser = 'SINNER';
+
+// Auto-init if on spreadsheet page
+if (currentMode === 'sheet') {
+    window.addEventListener('DOMContentLoaded', () => {
+        initData();
+        localStorage.removeItem('loginFailures');
+        document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
+    });
+}
 let isRendering = false;
 
 // --- RENDERER ---
@@ -282,7 +291,7 @@ function saveToCSV() {
     const headers = "SOUL ID,PUNISHMENT,ETA,ATONEMENT,VIBE\n";
     const rows = souls.map(s => `${s.name},${s.punishment},${s.duration},${s.atonement},${s.status}`).join('\n');
     const csvContent = headers + rows;
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -290,7 +299,7 @@ function saveToCSV() {
     a.download = 'damned.csv';
     a.click();
     URL.revokeObjectURL(url);
-    
+
     playSnickSuccess();
     alert('CSV EXPORTED TO DOWNLOADS');
 }
@@ -343,26 +352,19 @@ document.addEventListener('keydown', (e) => {
                 return;
             }
 
-            const pass = passInput.value;
+            const pass = passInput.value.toUpperCase();
             let success = false;
 
             const targetUser = SECRETS.users.find(u => u.username === loginUser);
             if (targetUser) {
-                if (pass === targetUser.password) success = true;
+                if (pass === targetUser.password.toUpperCase()) success = true;
             } else {
-                if (pass === SECRETS.defaultPattern) success = true;
+                if (pass === SECRETS.defaultPattern.toUpperCase()) success = true;
             }
 
             if (success) {
-                document.getElementById('login-screen').classList.remove('active');
-                document.getElementById('sheet-screen').classList.add('active');
-                currentMode = 'sheet';
-
-                localStorage.removeItem('loginFailures');
-                document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
-
-                initData();
-                playSnickSuccess();
+                // Redirect to spreadsheet.html instead of SPA toggle
+                window.location.href = 'spreadsheet.html';
             } else {
                 passInput.value = '';
                 playSnickFail();
@@ -444,12 +446,12 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const val = document.getElementById('modal-input').value;
             if (document.getElementById('modal-label').innerText.includes("ADD")) {
-                souls.push({ 
-                    name: val.toUpperCase(), 
-                    punishment: PUNISHMENTS[0], 
-                    duration: DURATIONS[0], 
-                    atonement: ATONEMENTS[0], 
-                    status: "ROTTING" 
+                souls.push({
+                    name: val.toUpperCase(),
+                    punishment: PUNISHMENTS[0],
+                    duration: DURATIONS[0],
+                    atonement: ATONEMENTS[0],
+                    status: "ROTTING"
                 });
             }
             closeModal();
@@ -517,9 +519,14 @@ function closeModal() {
 }
 
 setInterval(() => {
-    document.getElementById('main-title').innerText = curse("SATAN'S SPREADSHEETS", 1);
-    const now = new Date();
-    document.getElementById('clock').innerText = `06:66:${now.getSeconds().toString().padStart(2, '0')}`;
+    const mainTitle = document.getElementById('main-title');
+    if (mainTitle) mainTitle.innerText = curse("SATAN'S SPREADSHEETS", 1);
+
+    const clock = document.getElementById('clock');
+    if (clock) {
+        const now = new Date();
+        clock.innerText = `06:66:${now.getSeconds().toString().padStart(2, '0')}`;
+    }
 }, 1000);
 
 // --- SNICK THE ASSISTANT ---
@@ -569,7 +576,7 @@ function triggerSnick(forceScenario = null) {
         document.getElementById('snick-submit-btn').style.display = 'block';
         document.getElementById('snick-input').focus();
     } else if (currentSnickScenario === 'help') {
-        const quote = EXISTENTIAL_QUOTES.length > 0 
+        const quote = EXISTENTIAL_QUOTES.length > 0
             ? EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)]
             : "ERROR: EXISTENTIAL CRISIS NOT FOUND";
         document.getElementById('snick-dialog').innerText = quote;
@@ -672,7 +679,7 @@ document.getElementById('snick-abort-btn').addEventListener('click', () => {
 });
 
 document.getElementById('snick-retry-btn').addEventListener('click', () => {
-    const quote = EXISTENTIAL_QUOTES.length > 0 
+    const quote = EXISTENTIAL_QUOTES.length > 0
         ? EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)]
         : "ERROR: EXISTENTIAL CRISIS NOT FOUND";
     document.getElementById('snick-dialog').innerText = quote;
