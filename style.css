@@ -5,6 +5,18 @@
     --hell-red: #ff3300;
 }
 
+* {
+    box-sizing: border-box;
+}
+
+.screen-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
 @keyframes jitter {
     0% {
         transform: translate(0, 0);
@@ -128,6 +140,28 @@ input {
     font-size: 1.5em;
     text-align: center;
     outline: none;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.input-group label {
+    margin-bottom: 5px;
+}
+
+.input-group input {
+    width: 250px;
 }
 
 #login-btn {
@@ -363,4 +397,115 @@ th {
 
 .logo-orange {
     /* Orange Filter */
-    filter: invert(66%) sepia(35%) saturate(3018%) hue-rotate(360deg) br
+    filter: invert(66%) sepia(35%) saturate(3018%) hue-rotate(360deg) brightness(101%) contrast(106%);
+}
+
+.logo-red {
+    /* Red Filter */
+    filter: invert(19%) sepia(96%) saturate(6925%) hue-rotate(358deg) brightness(98%) contrast(118%);
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+/* --- Lockout Overlay --- */
+#lockout-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: auto;
+    background: black;
+    color: red;
+    border: 4px solid red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    padding: 40px;
+    box-shadow: 0 0 50px rgba(255, 0, 0, 0.5);
+}
+
+#lockout-overlay h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+    animation: glitch 1s infinite linear alternate-reverse;
+}
+
+.reversed {
+    transform: scaleX(-1);
+    display: inline-block;
+}
+
+.edit-mode {
+    background-color: #500;
+    color: #fff;
+    outline: 2px solid red;
+}
+
+#snick-submit-btn:hover,
+#snick-yes-btn:hover,
+#snick-no-btn:hover,
+#snick-abort-btn:hover,
+#snick-retry-btn:hover,
+#snick-resume-btn:hover {
+    background: #333;
+}
+
+/* EFFECTS */
+.cursed-font,
+.cursed-font * {
+    font-family: 'Zapfino', 'Wingdings', 'Papyrus', cursive !important;
+    text-shadow: 2px 2px red;
+}
+
+.rgb-cycle {
+    animation: rgb-freakout 0.2s infinite;
+}
+
+@keyframes rgb-freakout {
+    0% {
+        color: red;
+        text-shadow: 2px 2px blue;
+    }
+
+    33% {
+        color: green;
+        text-shadow: -2px 2px red;
+    }
+
+    66% {
+        color: blue;
+        text-shadow: 2px -2px green;
+    }
+
+    100% {
+        color: red;
+        text-shadow: 2px 2px blue;
+    }
+}
