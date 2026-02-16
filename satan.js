@@ -45,10 +45,35 @@ Promise.all([
     SECRETS = secrets;
 
     console.log("Hell loaded.");
+
+    // Check for existing lockout on load
+    checkLockout();
 }).catch(err => {
     console.error("Failed to load resources:", err);
     // Fallback?
 });
+
+function checkLockout() {
+    const lockoutUntil = parseInt(localStorage.getItem('lockoutUntil') || 0);
+    if (Date.now() < lockoutUntil) {
+        document.getElementById('lockout-overlay').style.display = 'flex';
+        // Timer Loop
+        const timerInterval = setInterval(() => {
+            const diff = lockoutUntil - Date.now();
+            if (diff <= 0) {
+                clearInterval(timerInterval);
+                localStorage.removeItem('lockoutUntil');
+                localStorage.removeItem('loginFailures');
+                document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
+                document.getElementById('lockout-overlay').style.display = 'none';
+                return;
+            }
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            document.getElementById('lockout-timer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+}
 
 let souls = [];
 let selectedRow = 0;
@@ -134,68 +159,84 @@ document.addEventListener('keydown', (e) => {
     if (isRendering && currentMode !== 'login') return;
     playTypeSound();
 
+    // Check Lockout on every keydown (or just init)
+    if (Date.now() < parseInt(localStorage.getItem('lockoutUntil') || 0)) {
+        e.preventDefault();
+        return;
+    }
+
     if (currentMode === 'login') {
         const userSpan = document.getElementById('login-user');
+        const userInput = document.getElementById('userInput');
+        const passInput = document.getElementById('passInput');
 
-        // Custom User Input Handler
-        if (document.getElementById('user-type-input')) {
-            if (e.key === 'Enter') {
-                const val = document.getElementById('user-type-input').value.toUpperCase();
-                loginUser = val || 'SINNER';
-                userSpan.innerHTML = loginUser;
-                if (loginUser !== 'ADMIN') userSpan.classList.add('reversed');
-                else userSpan.classList.remove('reversed');
-                document.getElementById('passInput').focus();
-            }
-            return;
-        }
-
-        // User Selection
-        if (e.key.toLowerCase() === 'l') {
-            loginUser = 'SINNER';
-            userSpan.innerText = 'SINNER';
+        // Sync footer with input
+        userInput.addEventListener('input', () => {
+            loginUser = userInput.value.toUpperCase() || 'SINNER';
+            userSpan.innerText = loginUser;
+            // Always reversed for style
             userSpan.classList.add('reversed');
-            document.getElementById('passInput').focus();
-        }
-        if (e.key.toLowerCase() === 'a') {
-            loginUser = 'ADMIN';
-            userSpan.innerText = 'ADMIN';
-            userSpan.classList.remove('reversed');
-            document.getElementById('passInput').focus();
-        }
-        if (e.key.toLowerCase() === 'u') {
-            userSpan.classList.remove('reversed');
-            userSpan.innerHTML = `<input id="user-type-input" style="background:transparent; border:none; border-bottom:1px solid red; color:red; font-family:inherit; width:100px; text-transform:uppercase; outline:none;" maxlength="10">`;
-            const input = document.getElementById('user-type-input');
-            input.focus();
+        });
+
+        // Focus User Logic
+        if (e.key.toLowerCase() === 'u' && document.activeElement !== userInput && document.activeElement !== passInput) {
+            userInput.focus();
             e.preventDefault();
         }
 
-        if (e.key === 'Enter' && !document.getElementById('user-type-input')) {
-            const pass = document.getElementById('passInput').value;
+        // Enter Key Logic
+        if (e.key === 'Enter') {
+            // If on User Input, move to Password
+            if (document.activeElement === userInput) {
+                passInput.focus();
+                return;
+            }
+
+            const pass = passInput.value;
             let success = false;
 
-            // Check against loaded secrets
+            // Validation
             const targetUser = SECRETS.users.find(u => u.username === loginUser);
-
             if (targetUser) {
                 if (pass === targetUser.password) success = true;
             } else {
-                // Custom/Unknown user -> Use default pattern
                 if (pass === SECRETS.defaultPattern) success = true;
             }
 
             if (success) {
+                // SUCCESS
                 document.getElementById('login-screen').classList.remove('active');
                 document.getElementById('sheet-screen').classList.add('active');
                 currentMode = 'sheet';
+
+                // Reset Login State
+                localStorage.removeItem('loginFailures');
+                document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
+
                 initData();
                 playSnickSuccess();
             } else {
-                document.getElementById('passInput').value = '';
-                document.getElementById('login-error').style.display = 'block';
+                // FAILURE
+                passInput.value = '';
                 playSnickFail();
-                setTimeout(() => document.getElementById('login-error').style.display = 'none', 1000);
+
+                let fails = parseInt(localStorage.getItem('loginFailures') || 0) + 1;
+                localStorage.setItem('loginFailures', fails);
+
+                if (fails === 1) {
+                    document.body.classList.add('theme-yellow');
+                } else if (fails === 2) {
+                    document.body.classList.remove('theme-yellow');
+                    document.body.classList.add('theme-orange');
+                } else if (fails >= 3) {
+                    document.body.classList.remove('theme-orange');
+                    document.body.classList.add('theme-red');
+
+                    // LOCKOUT
+                    const lockoutTime = Date.now() + 20 * 60 * 1000; // 20 mins
+                    localStorage.setItem('lockoutUntil', lockoutTime);
+                    checkLockout();
+                }
             }
         }
     }

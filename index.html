@@ -45,21 +45,34 @@
                     <img src="images/satanspreadsheetlogo.png" alt="Satan's Spreadsheet Logo" class="satan-logo">
                 </div>
                 <h1 id="main-title" class="glitch" data-text="SATAN'S SPREADSHEETS">SATAN'S SPREADSHEETS</h1>
-                <p class="subtitle">ENTER PASSWORD TO BEGIN SUFFERING</p>
-                <div class="input-group">
-                    <span class="prompt">></span>
-                    <input type="password" id="passInput" maxlength="3" autofocus>
+
+                <div class="login-form"
+                    style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+                    <div class="input-group">
+                        <label>USER:</label>
+                        <input type="text" id="userInput" maxlength="20" placeholder="SINNER" autofocus>
+                    </div>
+                    <div class="input-group">
+                        <label>PASSWORD TO BEGIN SUFFERING:</label>
+                        <input type="password" id="passInput" maxlength="3">
+                    </div>
                 </div>
+
                 <div class="error-msg" id="login-error">ACCESS DENIED</div>
             </div>
             <div class="status-bar">
-                <span>USER: <span id="login-user" class="reversed">SINNER</span></span>
+                <span>[U] CHANGE USER</span>
                 <span class="blink">|</span>
-                <span>[L] LOGIN</span>
-                <span class="blink">|</span>
-                <span>[A] ADMINISTRATOR</span>
-                <span class="blink">|</span>
-                <span>[U] USER</span>
+                <span>CURRENT USER: <span id="login-user" class="reversed">SINNER</span></span>
+            </div>
+
+            <!-- Lockout Overlay -->
+            <div id="lockout-overlay" style="display: none;">
+                <div class="lockout-msg">
+                    <h1>STATION LOCKED</h1>
+                    <p>THIS INCIDENT WILL BE REPORTED.</p>
+                    <div id="lockout-timer">20:00</div>
+                </div>
             </div>
         </div>
 

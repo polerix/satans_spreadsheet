@@ -205,3 +205,246 @@ th {
     max-width: 450px;
     z-index: 30;
 }
+
+.logo-img {
+    max-width: 80%;
+    width: 300px;
+    height: auto;
+    margin-bottom: 20px;
+    /* Filter to make it red: specific hex #ff0000 approx */
+    filter: brightness(0) saturate(100%) invert(18%) sepia(90%) saturate(6666%) hue-rotate(358deg) brightness(98%) contrast(118%);
+    opacity: 0.9;
+}
+
+/* SNICK STYLES */
+.snick-modal {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+#snick-img {
+    width: 150px;
+    height: auto;
+    filter: drop-shadow(5px 5px 0px #000);
+}
+
+.snick-bubble {
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 10px;
+    width: 250px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+    font-size: 0.9em;
+    position: relative;
+    box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.5);
+}
+
+.snick-bubble::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: 40px;
+    border-width: 0 20px 20px;
+    border-style: solid;
+    border-color: #fff transparent;
+    display: block;
+    width: 0;
+    z-index: 10;
+}
+
+.snick-bubble::after {
+    content: '';
+    position: absolute;
+    top: -26px;
+    right: 37px;
+    border-width: 0 23px 23px;
+    border-style: solid;
+    border-color: #000 transparent;
+    display: block;
+    width: 0;
+    z-index: 0;
+}
+
+
+#snick-input {
+    width: 100%;
+    border: 1px solid #000;
+    color: #000;
+    margin-top: 10px;
+    font-size: 1em;
+    background: #fff;
+}
+
+#snick-submit-btn,
+#snick-yes-btn,
+#snick-no-btn,
+#snick-abort-btn,
+#snick-retry-btn,
+#snick-resume-btn {
+    background: #000;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    margin-top: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: bold;
+    margin-right: 2px;
+}
+
+/* Snick Help Buttons */
+.snick-help-btn {
+    background: black;
+    color: red;
+    border: 1px solid red;
+    padding: 5px 10px;
+    margin: 5px;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.snick-help-btn:hover {
+    background: red;
+    color: black;
+}
+
+/* Grid Selection */
+.reverse-cell {
+    background-color: var(--crt-green);
+    color: black;
+    animation: flicker 0.1s infinite;
+}
+
+.edit-mode {
+    border-bottom: 2px solid white;
+    background-color: darkred;
+    color: white;
+}
+
+/* --- Failure Themes --- */
+.theme-yellow {
+    --primary-color: #ffff00;
+    --text-color: #ffff00;
+    --border-color: #ffff00;
+}
+
+.theme-orange {
+    --primary-color: #ffa500;
+    --text-color: #ffa500;
+    --border-color: #ffa500;
+}
+
+.theme-red {
+    --primary-color: #ff0000;
+    --text-color: #ff0000;
+    --border-color: #ff0000;
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+/* --- Lockout Overlay --- */
+#lockout-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    color: red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+}
+
+#lockout-overlay h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    animation: glitch 1s infinite linear alternate-reverse;
+}
+
+.reversed {
+    transform: scaleX(-1);
+    display: inline-block;
+}
+
+.edit-mode {
+    background-color: #500;
+    color: #fff;
+    outline: 2px solid red;
+}
+
+#snick-submit-btn:hover,
+#snick-yes-btn:hover,
+#snick-no-btn:hover,
+#snick-abort-btn:hover,
+#snick-retry-btn:hover,
+#snick-resume-btn:hover {
+    background: #333;
+}
+
+/* EFFECTS */
+.cursed-font,
+.cursed-font * {
+    font-family: 'Zapfino', 'Wingdings', 'Papyrus', cursive !important;
+    text-shadow: 2px 2px red;
+}
+
+.rgb-cycle {
+    animation: rgb-freakout 0.2s infinite;
+}
+
+@keyframes rgb-freakout {
+    0% {
+        color: red;
+        text-shadow: 2px 2px blue;
+    }
+
+    33% {
+        color: green;
+        text-shadow: -2px 2px red;
+    }
+
+    66% {
+        color: blue;
+        text-shadow: 2px -2px green;
+    }
+
+    100% {
+        color: red;
+        text-shadow: 2px 2px blue;
+    }
+}
