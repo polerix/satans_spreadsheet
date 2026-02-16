@@ -37,12 +37,28 @@
             </symbol>
         </svg>
 
-        <div id="login-screen" class="screen active">
-            <img src="images/satanspreadsheetlogo.png" alt="Satan's Spreadsheets Logo" class="logo-img">
-            <div class="glitch-title" id="main-title">SATAN'S SPREADSHEETS</div>
-            <p>TERMINAL READY. CARRIER LOST.</p>
-            <p style="margin-top: 50px;">ENTER PASSWORD (666):</p>
-            <input type="password" id="passInput" maxlength="3" autofocus>
+        <!-- Login Screen -->
+        <div id="login-screen" class="active crt-frame">
+            <div class="screen-content"
+                style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
+                <div class="logo-container">
+                    <img src="images/satanspreadsheetlogo.png" alt="Satan's Spreadsheet Logo" class="satan-logo">
+                </div>
+                <h1 id="main-title" class="glitch" data-text="SATAN'S SPREADSHEETS">SATAN'S SPREADSHEETS</h1>
+                <p class="subtitle">ENTER PASSWORD TO BEGIN SUFFERING</p>
+                <div class="input-group">
+                    <span class="prompt">></span>
+                    <input type="password" id="passInput" maxlength="3" autofocus>
+                </div>
+                <div class="error-msg" id="login-error">ACCESS DENIED</div>
+            </div>
+            <div class="status-bar">
+                <span>USER: <span id="login-user" class="reversed">SINNER</span></span>
+                <span class="blink">|</span>
+                <span>[L] LOGIN</span>
+                <span class="blink">|</span>
+                <span>[A] ADMINISTRATOR</span>
+            </div>
         </div>
 
         <div id="sheet-screen" class="screen">
@@ -74,4 +90,37 @@
 
         <div id="input-modal" class="modal">
             <p id="modal-label">ENTER NAME:</p>
-            <inp
+            <input type="text" id="modal-input" style="width: 400px;">
+        </div>
+
+        <div id="demotivational-modal" class="modal demotivational">
+            <h2 style="margin-top:0;">MANDATORY REFLECTION</h2>
+            <p id="quote-text"></p>
+            <p style="font-size: 0.6em; margin-top:20px;">PRESS [X] TO ACCEPT YOUR FATE</p>
+        </div>
+
+        <div id="snick-modal" class="snick-modal" style="display:none;">
+            <img id="snick-img" src="" alt="Snick">
+            <div class="snick-bubble">
+                <p id="snick-dialog"></p>
+                <div id="snick-controls">
+                    <input type="text" id="snick-input" placeholder="Type answer...">
+                    <button id="snick-submit-btn">SUBMIT</button>
+                    <div id="snick-buttons" style="display:none;">
+                        <button id="snick-yes-btn">YES</button>
+                        <button id="snick-no-btn">NO</button>
+                    </div>
+                    <div id="snick-help-buttons" style="display:none;">
+                        <button id="snick-abort-btn">ABORT</button>
+                        <button id="snick-retry-btn">RETRY</button>
+                        <button id="snick-resume-btn">RESUME</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="satan.js"></script>
+</body>
+
+</html>

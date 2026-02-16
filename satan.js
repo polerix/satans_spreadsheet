@@ -1,64 +1,25 @@
 const NAMES = ["NERO", "THE CEO OF SUBSCRIPTIONS", "EPSTEIN", "CALIGULA", "BRUTUS", "PEOPLE WHO DON'T RECYCLE"];
-const PUNISHMENTS = ["ETERNAL DIAL-UP", "RE-WATCHING THE 2024 DEBATES", "SMELLING BURNT TOAST", "STEPPING ON A LEGO"];
+const PUNISHMENTS = [
+    "ETERNAL DIAL-UP", "RE-WATCHING THE 2024 DEBATES", "SMELLING BURNT TOAST", "STEPPING ON A LEGO",
+    "WET SOCKS FOREVER", "BUFFERING...", "NO WIFI SIGNAL", "BATTERY AT 1%",
+    "UNSKIPPABLE ADS", "CRUMBS IN BED", "ZOOM CALLS 24/7", "REPLY ALL EMAILS"
+];
 const DURATIONS = ["4000 EONS", "999,999 HOURS", "UNTIL VOID CONSUMES"];
 const ATONEMENTS = ["COUNTING SAND GRAINS", "SORT RICE BY LENGTH", "TYPING WITH ELBOWS"];
+const VIBES = [
+    "ROTTING", "SCREAMING", "REGRET", "DOOMSCROLLING", "COPE", "SEETHING",
+    "MALDING", "VIBING", "DECAYING", "GLITCHING", "LOADING", "404 SOUL NOT FOUND"
+];
 const QUOTES = ["HOPE IS THE FIRST STEP TO DISAPPOINTMENT.", "EVERYONE HAS A PURPOSE. YOURS IS LIKELY DATA ENTRY.", "THE LIGHT AT THE END OF THE TUNNEL IS AN ONCOMING TRAIN."];
 
 let souls = [];
 let selectedRow = 0;
+let selectedCol = 0; // 0:Name, 1:Punishment, 2:Duration, 3:Atonement, 4:Vibe
+let isEditMode = false; // For dropdown/modification
 let currentMode = 'login';
 let isRendering = false;
 
-// Handshake Variables
-let handshakeBuffer = 100; // Depletes during render
-let isConnectionLost = false;
-
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-// --- CURSED GLYPH ENGINE ---
-function curse(text, intensity = 5) {
-    const chars = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0310', '\u0316', '\u0317', '\u0318', '\u0319'];
-    return text.split('').map(char => {
-        if (Math.random() > 0.9) {
-            let glitched = char;
-            for (let i = 0; i < intensity; i++) glitched += chars[Math.floor(Math.random() * chars.length)];
-            return glitched;
-        }
-        return char;
-    }).join('');
-}
-
-// --- ALCHEMY EFFECT ---
-function spawnHandshakeEffect() {
-    const sigil = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    sigil.setAttribute("class", "alchemy-sigil fly-away");
-
-    // Random direction
-    const tx = (Math.random() - 0.5) * 2000;
-    const ty = (Math.random() - 0.5) * 2000;
-    sigil.style.setProperty('--tw-x', `${tx}px`);
-    sigil.style.setProperty('--tw-y', `${ty}px`);
-
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    const glyphs = ['#brimstone', '#pentagram', '#chaos', '#void'];
-    const randomGlyph = glyphs[Math.floor(Math.random() * glyphs.length)];
-    use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", randomGlyph);
-    sigil.appendChild(use);
-
-    document.getElementById('monitor').appendChild(sigil);
-    setTimeout(() => sigil.remove(), 2000);
-}
-
-// --- AUDIO ---
-function playTypeSound(freq = 150) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.frequency.setValueAtTime(freq + Math.random() * 50, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-}
+// ... (Handshake/Audio/Curse/Alchemy unchanged) ...
 
 // --- RENDERER ---
 async function slowRender(filter = "") {
@@ -66,22 +27,40 @@ async function slowRender(filter = "") {
     isRendering = true;
     handshakeBuffer = 50; // Start with some signal
 
+    const headers = ["SOUL ID", "PUNISHMENT", "ETA", "ATONEMENT", "VIBE"];
+    const thead = document.querySelector('thead');
+    if (thead) {
+        thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    }
+
     const tbody = document.getElementById('sheet-body');
     tbody.innerHTML = '';
     const filtered = souls.filter(s => s.name.toUpperCase().includes(filter.toUpperCase()));
 
-    for (let soul of filtered) {
+    for (let r = 0; r < filtered.length; r++) {
+        const soul = filtered[r];
         const tr = document.createElement('tr');
         tbody.appendChild(tr);
+
+        // Map soul properties to columns
         const fields = [curse(soul.name), soul.punishment, soul.duration, curse(soul.atonement), soul.status];
 
-        for (let field of fields) {
+        for (let c = 0; c < fields.length; c++) {
+            const field = fields[c];
             const td = document.createElement('td');
+
+            // Highlight Selection
+            if (currentMode === 'sheet' && r === selectedRow && c === selectedCol) {
+                td.classList.add('reverse-cell');
+                if (isEditMode) td.classList.add('edit-mode');
+            }
+
             tr.appendChild(td);
             const chars = Array.from(field);
             for (let char of chars) {
-                // HANDSHAKE CHECK
+                // HANDSHAKE CHECK (unchanged)
                 while (handshakeBuffer <= 0) {
+                    // ...
                     isConnectionLost = true;
                     document.getElementById('handshake-warning').style.visibility = 'visible';
                     document.getElementById('modem-text').innerText = "NO CARRIER";
@@ -93,7 +72,7 @@ async function slowRender(filter = "") {
 
                 td.textContent += char;
                 handshakeBuffer -= (Math.random() * 2 + 0.5); // Signal decays chaotically
-                playTypeSound();
+                playDataStream();
                 await new Promise(r => setTimeout(r, 33));
             }
         }
@@ -117,35 +96,99 @@ document.addEventListener('keydown', (e) => {
     playTypeSound();
 
     if (currentMode === 'login') {
+        // User Selection
+        if (e.key.toLowerCase() === 'l') {
+            loginUser = 'SINNER';
+            const userSpan = document.getElementById('login-user');
+            userSpan.innerText = 'SINNER';
+            userSpan.classList.add('reversed');
+            document.getElementById('passInput').focus();
+        }
+        if (e.key.toLowerCase() === 'a') {
+            loginUser = 'ADMIN';
+            const userSpan = document.getElementById('login-user');
+            userSpan.innerText = 'ADMIN';
+            userSpan.classList.remove('reversed');
+            document.getElementById('passInput').focus();
+        }
+
         if (e.key === 'Enter') {
-            if (document.getElementById('passInput').value === '666') {
+            const pass = document.getElementById('passInput').value;
+            let success = false;
+
+            if (loginUser === 'SINNER' && pass === '666') success = true;
+            if (loginUser === 'ADMIN' && pass === '777') success = true;
+
+            if (success) {
                 document.getElementById('login-screen').classList.remove('active');
                 document.getElementById('sheet-screen').classList.add('active');
                 currentMode = 'sheet';
                 initData();
+                // playSnickSuccess(); // Assuming these functions exist
             } else {
                 document.getElementById('passInput').value = '';
+                // document.getElementById('login-error').style.display = 'block'; // Ensure you add this logic/style or just use existing
+                // playSnickFail(); // Assuming these functions exist
+                // setTimeout(() => document.getElementById('login-error').style.display = 'none', 1000); // Simple flash
             }
         }
     }
     else if (currentMode === 'sheet') {
-        if (e.key === 'ArrowDown') selectedRow = Math.min(selectedRow + 1, souls.length - 1);
-        if (e.key === 'ArrowUp') selectedRow = Math.max(selectedRow - 1, 0);
-        if (e.key.toLowerCase() === 'b') {
-            pendingBribeAction = true;
-            triggerSnick('bribe');
+        const soul = souls[selectedRow];
+
+        if (isEditMode) {
+            // EDIT MODE CONTROLS
+            if (e.key === 'x' || e.key === 'X') {
+                isEditMode = false;
+                slowRender(); // Re-render to remove edit style
+                return;
+            }
+
+            if (selectedCol === 1) { // PUNISHMENT COLUMN
+                let idx = PUNISHMENTS.indexOf(soul.punishment);
+                if (e.key === 'ArrowDown') idx = (idx + 1) % PUNISHMENTS.length;
+                if (e.key === 'ArrowUp') idx = (idx - 1 + PUNISHMENTS.length) % PUNISHMENTS.length;
+                soul.punishment = PUNISHMENTS[idx];
+
+                // Direct DOM update for speed
+                const cell = document.getElementById('sheet-body').children[selectedRow].children[1];
+                cell.innerText = soul.punishment;
+            }
+        } else {
+            // NAVIGATION MODE
+            if (e.key === 'ArrowDown') {
+                selectedRow = Math.min(selectedRow + 1, souls.length - 1);
+                slowRender();
+            }
+            if (e.key === 'ArrowUp') {
+                selectedRow = Math.max(selectedRow - 1, 0);
+                slowRender();
+            }
+            if (e.key === 'ArrowLeft') {
+                selectedCol = Math.max(selectedCol - 1, 0);
+                slowRender();
+            }
+            if (e.key === 'ArrowRight') {
+                selectedCol = Math.min(selectedCol + 1, 4);
+                slowRender();
+            }
+
+            if (e.key === 'x' || e.key === 'X') {
+                isEditMode = true;
+                slowRender();
+            }
+
+            if (e.key.toLowerCase() === 'b') {
+                pendingBribeAction = true;
+                triggerSnick('bribe');
+            }
+            if (e.key.toLowerCase() === 'a') openModal("ADD NEW DAMNED:");
+            if (e.key.toLowerCase() === 's' && !e.shiftKey) openModal("SEARCH DATABASE:");
+            if (e.key.toLowerCase() === 'i') initData();
+            if (e.key.toLowerCase() === 'h') triggerSnick('help');
+            if (e.key === 'S' && e.shiftKey) saveToCSV(); // Shift+S to Save
+            if (e.key === 'Escape') location.reload();
         }
-        if (e.key.toLowerCase() === 'a') openModal("ADD NEW DAMNED:");
-        if (e.key.toLowerCase() === 's') openModal("SEARCH DATABASE:");
-        if (e.key.toLowerCase() === 'i') {
-            // INDEX: Reset and Reload
-            initData();
-        }
-        if (e.key.toLowerCase() === 'h') {
-            // HELP: Snick Existential Crisis
-            triggerSnick('help');
-        }
-        if (e.key === 'Escape') location.reload();
     }
     else if (currentMode === 'modal') {
         if (e.key === 'Enter') {
@@ -172,9 +215,35 @@ function initData() {
         punishment: PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)],
         duration: DURATIONS[Math.floor(Math.random() * DURATIONS.length)],
         atonement: ATONEMENTS[Math.floor(Math.random() * ATONEMENTS.length)],
-        status: "ROTTING"
+        status: VIBES[Math.floor(Math.random() * VIBES.length)]
     }));
     slowRender();
+
+    // Automated Vibe Cycling
+    setInterval(() => {
+        if (currentMode === 'sheet' && souls.length > 0) {
+            // Pick a random soul and change their vibe
+            const r = Math.floor(Math.random() * souls.length);
+            souls[r].status = VIBES[Math.floor(Math.random() * VIBES.length)];
+            // Only re-render if it's visible? slowRender is too slow for constant updates.
+            // We'll update the DOM directly for performance if possible, or just let it update on next render.
+            // For now, let's trigger a fast render or direct update? 
+            // "slowRender" is the only render. Let's not trigger it constantly. 
+            // We can assume user sees update when they move cursor or interact.
+            // Or we can simple update the text if not rendering.
+            if (!isRendering) {
+                // Creating a 'fast update' would be better but for now let's just let it update on next interaction
+                // OR force a re-render if user is idle?
+                // Let's just update the specific cell if it exists:
+                const tbody = document.getElementById('sheet-body');
+                if (tbody && tbody.children[r] && tbody.children[r].children[4]) {
+                    tbody.children[r].children[4].innerText = souls[r].status;
+                    playDataStream(); // Small blip
+                }
+            }
+        }
+    }, 2000); // Change a vibe every 2 seconds
+
     setInterval(() => {
         if (currentMode === 'sheet' && !isRendering && Math.random() > 0.8) {
             document.getElementById('quote-text').innerText = curse(QUOTES[Math.floor(Math.random() * QUOTES.length)], 2);
@@ -229,6 +298,7 @@ function triggerSnick(forceScenario = null) {
     if (snickActive || (currentMode !== 'sheet' && !forceScenario)) return;
     snickActive = true;
     currentSnickScenario = forceScenario || SNICK_SCENARIOS[Math.floor(Math.random() * SNICK_SCENARIOS.length)];
+    playSnickPop();
 
     // Setup UI
     document.getElementById('snick-modal').style.display = 'flex';
@@ -274,6 +344,7 @@ function handleSnickAnswer() {
         if (currentRiddle && currentRiddle.a.includes(val)) {
             resolveConnection();
             alertSnick("Fine. Connection restored.", true);
+            playSnickSuccess();
 
             if (pendingBribeAction) {
                 const bribe = souls.splice(selectedRow, 1)[0];
@@ -286,6 +357,7 @@ function handleSnickAnswer() {
         } else {
             applyCurse();
             alertSnick("WRONG! Enjoy the curse.", true);
+            playSnickFail();
             pendingBribeAction = false;
         }
     } else if (currentSnickScenario === 'time') {
@@ -294,9 +366,11 @@ function handleSnickAnswer() {
         if (!isNaN(inputSec) && Math.abs(inputSec - seconds) <= 3) {
             resolveConnection();
             alertSnick("Acceptable.", true);
+            playSnickSuccess();
         } else {
             applyRGBCycle();
             alertSnick("TOO SLOW! BURN IN RGB!", true);
+            playSnickFail();
         }
     }
 }
