@@ -1,22 +1,61 @@
-const NAMES = ["NERO", "THE CEO OF SUBSCRIPTIONS", "EPSTEIN", "CALIGULA", "BRUTUS", "PEOPLE WHO DON'T RECYCLE"];
-const PUNISHMENTS = [
-    "ETERNAL DIAL-UP", "RE-WATCHING THE 2024 DEBATES", "SMELLING BURNT TOAST", "STEPPING ON A LEGO",
-    "WET SOCKS FOREVER", "BUFFERING...", "NO WIFI SIGNAL", "BATTERY AT 1%",
-    "UNSKIPPABLE ADS", "CRUMBS IN BED", "ZOOM CALLS 24/7", "REPLY ALL EMAILS"
-];
-const DURATIONS = ["4000 EONS", "999,999 HOURS", "UNTIL VOID CONSUMES"];
-const ATONEMENTS = ["COUNTING SAND GRAINS", "SORT RICE BY LENGTH", "TYPING WITH ELBOWS"];
-const VIBES = [
-    "ROTTING", "SCREAMING", "REGRET", "DOOMSCROLLING", "COPE", "SEETHING",
-    "MALDING", "VIBING", "DECAYING", "GLITCHING", "LOADING", "404 SOUL NOT FOUND"
-];
-const QUOTES = ["HOPE IS THE FIRST STEP TO DISAPPOINTMENT.", "EVERYONE HAS A PURPOSE. YOURS IS LIKELY DATA ENTRY.", "THE LIGHT AT THE END OF THE TUNNEL IS AN ONCOMING TRAIN."];
+// --- GLOBAL DATA ---
+let NAMES = [];
+let PUNISHMENTS = [];
+let DURATIONS = [];
+let ATONEMENTS = [];
+let VIBES = [];
+let QUOTES = []; // Demotivational
+let RIDDLES = []; // Snick
+let EXISTENTIAL_QUOTES = []; // Snick Help
+let SECRETS = { users: [], defaultPattern: "666" };
+let initialSoulsData = [];
+
+// --- FETCH DATA ---
+Promise.all([
+    fetch('riddles.json').then(r => r.json()),
+    fetch('damned.csv').then(r => r.text()),
+    fetch('secret.json').then(r => r.json())
+]).then(([riddles, csv, secrets]) => {
+    // 1. Riddles & Content
+    NAMES = riddles.names;
+    PUNISHMENTS = riddles.punishments;
+    DURATIONS = riddles.durations;
+    ATONEMENTS = riddles.atonements;
+    VIBES = riddles.vibes;
+    QUOTES = riddles.quotes;
+    RIDDLES = riddles.riddles;
+
+    // 2. CSV Data
+    const lines = csv.trim().split('\n');
+    // Skip header (row 0)
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',');
+        if (cols.length >= 5) {
+            initialSoulsData.push({
+                name: cols[0].trim(),
+                punishment: cols[1].trim(),
+                duration: cols[2].trim(),
+                atonement: cols[3].trim(),
+                status: cols[4].trim()
+            });
+        }
+    }
+
+    // 3. Secrets
+    SECRETS = secrets;
+
+    console.log("Hell loaded.");
+}).catch(err => {
+    console.error("Failed to load resources:", err);
+    // Fallback?
+});
 
 let souls = [];
 let selectedRow = 0;
 let selectedCol = 0; // 0:Name, 1:Punishment, 2:Duration, 3:Atonement, 4:Vibe
 let isEditMode = false; // For dropdown/modification
 let currentMode = 'login';
+let loginUser = 'SINNER'; // 'SINNER' or 'ADMIN'
 let isRendering = false;
 
 // ... (Handshake/Audio/Curse/Alchemy unchanged) ...
@@ -96,40 +135,67 @@ document.addEventListener('keydown', (e) => {
     playTypeSound();
 
     if (currentMode === 'login') {
+        const userSpan = document.getElementById('login-user');
+
+        // Custom User Input Handler
+        if (document.getElementById('user-type-input')) {
+            if (e.key === 'Enter') {
+                const val = document.getElementById('user-type-input').value.toUpperCase();
+                loginUser = val || 'SINNER';
+                userSpan.innerHTML = loginUser;
+                if (loginUser !== 'ADMIN') userSpan.classList.add('reversed');
+                else userSpan.classList.remove('reversed');
+                document.getElementById('passInput').focus();
+            }
+            return;
+        }
+
         // User Selection
         if (e.key.toLowerCase() === 'l') {
             loginUser = 'SINNER';
-            const userSpan = document.getElementById('login-user');
             userSpan.innerText = 'SINNER';
             userSpan.classList.add('reversed');
             document.getElementById('passInput').focus();
         }
         if (e.key.toLowerCase() === 'a') {
             loginUser = 'ADMIN';
-            const userSpan = document.getElementById('login-user');
             userSpan.innerText = 'ADMIN';
             userSpan.classList.remove('reversed');
             document.getElementById('passInput').focus();
         }
+        if (e.key.toLowerCase() === 'u') {
+            userSpan.classList.remove('reversed');
+            userSpan.innerHTML = `<input id="user-type-input" style="background:transparent; border:none; border-bottom:1px solid red; color:red; font-family:inherit; width:100px; text-transform:uppercase; outline:none;" maxlength="10">`;
+            const input = document.getElementById('user-type-input');
+            input.focus();
+            e.preventDefault();
+        }
 
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !document.getElementById('user-type-input')) {
             const pass = document.getElementById('passInput').value;
             let success = false;
 
-            if (loginUser === 'SINNER' && pass === '666') success = true;
-            if (loginUser === 'ADMIN' && pass === '777') success = true;
+            // Check against loaded secrets
+            const targetUser = SECRETS.users.find(u => u.username === loginUser);
+
+            if (targetUser) {
+                if (pass === targetUser.password) success = true;
+            } else {
+                // Custom/Unknown user -> Use default pattern
+                if (pass === SECRETS.defaultPattern) success = true;
+            }
 
             if (success) {
                 document.getElementById('login-screen').classList.remove('active');
                 document.getElementById('sheet-screen').classList.add('active');
                 currentMode = 'sheet';
                 initData();
-                // playSnickSuccess(); // Assuming these functions exist
+                playSnickSuccess();
             } else {
                 document.getElementById('passInput').value = '';
-                // document.getElementById('login-error').style.display = 'block'; // Ensure you add this logic/style or just use existing
-                // playSnickFail(); // Assuming these functions exist
-                // setTimeout(() => document.getElementById('login-error').style.display = 'none', 1000); // Simple flash
+                document.getElementById('login-error').style.display = 'block';
+                playSnickFail();
+                setTimeout(() => document.getElementById('login-error').style.display = 'none', 1000);
             }
         }
     }
@@ -210,13 +276,22 @@ document.addEventListener('keydown', (e) => {
 });
 
 function initData() {
-    souls = NAMES.map(name => ({
-        name: name,
-        punishment: PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)],
-        duration: DURATIONS[Math.floor(Math.random() * DURATIONS.length)],
-        atonement: ATONEMENTS[Math.floor(Math.random() * ATONEMENTS.length)],
-        status: VIBES[Math.floor(Math.random() * VIBES.length)]
-    }));
+    // If we have CSV data, use it. Otherwise fallback to random (or empty if NAMES not loaded)
+    if (initialSoulsData.length > 0) {
+        // Deep copy to allow modification without affecting the "Reset" state? 
+        // actually initData IS the reset. So we copy from initial.
+        souls = JSON.parse(JSON.stringify(initialSoulsData));
+    } else {
+        // Fallback if CSV failed or not loaded yet
+        souls = NAMES.map(name => ({
+            name: name,
+            punishment: PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)],
+            duration: DURATIONS[Math.floor(Math.random() * DURATIONS.length)],
+            atonement: ATONEMENTS[Math.floor(Math.random() * ATONEMENTS.length)],
+            status: VIBES[Math.floor(Math.random() * VIBES.length)]
+        }));
+    }
+
     slowRender();
 
     // Automated Vibe Cycling
@@ -224,28 +299,22 @@ function initData() {
         if (currentMode === 'sheet' && souls.length > 0) {
             // Pick a random soul and change their vibe
             const r = Math.floor(Math.random() * souls.length);
-            souls[r].status = VIBES[Math.floor(Math.random() * VIBES.length)];
-            // Only re-render if it's visible? slowRender is too slow for constant updates.
-            // We'll update the DOM directly for performance if possible, or just let it update on next render.
-            // For now, let's trigger a fast render or direct update? 
-            // "slowRender" is the only render. Let's not trigger it constantly. 
-            // We can assume user sees update when they move cursor or interact.
-            // Or we can simple update the text if not rendering.
-            if (!isRendering) {
-                // Creating a 'fast update' would be better but for now let's just let it update on next interaction
-                // OR force a re-render if user is idle?
-                // Let's just update the specific cell if it exists:
-                const tbody = document.getElementById('sheet-body');
-                if (tbody && tbody.children[r] && tbody.children[r].children[4]) {
-                    tbody.children[r].children[4].innerText = souls[r].status;
-                    playDataStream(); // Small blip
+            if (VIBES.length > 0) {
+                souls[r].status = VIBES[Math.floor(Math.random() * VIBES.length)];
+                // Update DOM directly
+                if (!isRendering) {
+                    const tbody = document.getElementById('sheet-body');
+                    if (tbody && tbody.children[r] && tbody.children[r].children[4]) {
+                        tbody.children[r].children[4].innerText = souls[r].status;
+                        playDataStream(); // Small blip
+                    }
                 }
             }
         }
     }, 2000); // Change a vibe every 2 seconds
 
     setInterval(() => {
-        if (currentMode === 'sheet' && !isRendering && Math.random() > 0.8) {
+        if (currentMode === 'sheet' && !isRendering && Math.random() > 0.8 && QUOTES.length > 0) {
             document.getElementById('quote-text').innerText = curse(QUOTES[Math.floor(Math.random() * QUOTES.length)], 2);
             document.getElementById('demotivational-modal').style.display = 'block';
             currentMode = 'demotivational';
@@ -285,14 +354,7 @@ const SNICK_IMGS = {
     'time': 'images/snick_time.png',
     'help': 'images/snick_laugh.png'
 };
-
-const EXISTENTIAL_QUOTES = [
-    "You want help? Try creating a universe that cares.",
-    "The delete key is right there. It ends the pain.",
-    "404: Meaning of Life Not Found.",
-    "We are but dust in a digital wind.",
-    "Your spreadsheet has more purpose than you."
-];
+// EXISTENTIAL_QUOTES removed (now var)
 
 function triggerSnick(forceScenario = null) {
     if (snickActive || (currentMode !== 'sheet' && !forceScenario)) return;
