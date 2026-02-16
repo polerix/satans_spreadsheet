@@ -39,32 +39,33 @@
 
         <!-- Login Screen -->
         <div id="login-screen" class="active crt-frame">
+            <!-- screen-content now flexes to content height, centered by parent #login-screen -->
             <div class="screen-content"
-                style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
+                style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%;">
                 <div class="logo-container">
-                    <img src="images/satanspreadsheetlogo.png" alt="Satan's Spreadsheet Logo" class="satan-logo">
+                    <img src="images/satanspreadsheetlogo.png" alt="Satan's Spreadsheet Logo"
+                        class="satan-logo logo-green">
                 </div>
                 <h1 id="main-title" class="glitch" data-text="SATAN'S SPREADSHEETS">SATAN'S SPREADSHEETS</h1>
 
                 <div class="login-form"
-                    style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
-                    <div class="input-group">
-                        <label>USER:</label>
-                        <input type="text" id="userInput" maxlength="20" placeholder="SINNER" autofocus>
+                    style="display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;">
+                    <div class="input-group" style="display: flex; flex-direction: column; align-items: center;">
+                        <label style="margin-bottom: 5px;">USERNAME</label>
+                        <input type="text" id="userInput" maxlength="20" placeholder="SINNER" autofocus
+                            autocomplete="off" style="width: 250px;">
                     </div>
-                    <div class="input-group">
-                        <label>PASSWORD TO BEGIN SUFFERING:</label>
-                        <input type="password" id="passInput" maxlength="3">
+                    <div class="input-group" style="display: flex; flex-direction: column; align-items: center;">
+                        <label style="margin-bottom: 5px;">PASSWORD</label>
+                        <input type="password" id="passInput" maxlength="20" style="width: 250px;">
                     </div>
+                    <button id="login-btn">LOGIN</button>
                 </div>
 
-                <div class="error-msg" id="login-error">ACCESS DENIED</div>
+                <div class="error-msg" id="login-error" style="display:none; color: var(--hell-red); margin-top: 20px;">
+                    ACCESS DENIED</div>
             </div>
-            <div class="status-bar">
-                <span>[U] CHANGE USER</span>
-                <span class="blink">|</span>
-                <span>CURRENT USER: <span id="login-user" class="reversed">SINNER</span></span>
-            </div>
+
 
             <!-- Lockout Overlay -->
             <div id="lockout-overlay" style="display: none;">
@@ -76,63 +77,7 @@
             </div>
         </div>
 
-        <div id="sheet-screen" class="screen">
-            <div id="status-bar">
-                <span id="modem-text">IDLE</span> |
-                <span id="handshake-warning">CARRIER DROPPED - MASH [SPACE] TO RECONNECT</span>
-            </div>
-            <div
-                style="display:flex; justify-content: space-between; border-bottom: 1px solid var(--phosphor-green); padding-bottom: 5px; margin-bottom:10px;">
-                <span>FILE: LEDGER_VOID_FINAL.SLS</span>
-                <span id="clock">06:66:00</span>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">SOUL ID</th>
-                        <th style="width: 25%;">PUNISHMENT</th>
-                        <th style="width: 15%;">ETA</th>
-                        <th style="width: 25%;">ATONEMENT</th>
-                        <th style="width: 15%;">VIBE</th>
-                    </tr>
-                </thead>
-                <tbody id="sheet-body"></tbody>
-            </table>
-            <div class="footer-nav">
-                [SPACE] MAINTAIN HANDSHAKE | [A] ADD | [B] BRIBE | [S] SEARCH | [I] INDEX | [H] HELP
-            </div>
-        </div>
 
-        <div id="input-modal" class="modal">
-            <p id="modal-label">ENTER NAME:</p>
-            <input type="text" id="modal-input" style="width: 400px;">
-        </div>
-
-        <div id="demotivational-modal" class="modal demotivational">
-            <h2 style="margin-top:0;">MANDATORY REFLECTION</h2>
-            <p id="quote-text"></p>
-            <p style="font-size: 0.6em; margin-top:20px;">PRESS [X] TO ACCEPT YOUR FATE</p>
-        </div>
-
-        <div id="snick-modal" class="snick-modal" style="display:none;">
-            <img id="snick-img" src="" alt="Snick">
-            <div class="snick-bubble">
-                <p id="snick-dialog"></p>
-                <div id="snick-controls">
-                    <input type="text" id="snick-input" placeholder="Type answer...">
-                    <button id="snick-submit-btn">SUBMIT</button>
-                    <div id="snick-buttons" style="display:none;">
-                        <button id="snick-yes-btn">YES</button>
-                        <button id="snick-no-btn">NO</button>
-                    </div>
-                    <div id="snick-help-buttons" style="display:none;">
-                        <button id="snick-abort-btn">ABORT</button>
-                        <button id="snick-retry-btn">RETRY</button>
-                        <button id="snick-resume-btn">RESUME</button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script src="satan.js"></script>
