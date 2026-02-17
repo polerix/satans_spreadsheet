@@ -877,4 +877,57 @@ function applyCurse() {
 }
 
 function applyRGBCycle() {
-    document.bo
+    document.body.classList.add('rgb-cycle');
+    setTimeout(() => {
+        document.body.classList.remove('rgb-cycle');
+    }, 20000);
+}
+
+document.getElementById('snick-submit-btn').addEventListener('click', handleSnickAnswer);
+document.getElementById('snick-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleSnickAnswer();
+});
+
+document.getElementById('snick-yes-btn').addEventListener('click', () => {
+    currentSnickScenario = 'goosechase';
+    currentRiddle = RIDDLES[Math.floor(Math.random() * RIDDLES.length)];
+    document.getElementById('snick-dialog').innerText = "Excellent. Solve this: " + currentRiddle.q;
+    document.getElementById('snick-buttons').style.display = 'none';
+    document.getElementById('snick-input').style.display = 'block';
+    document.getElementById('snick-submit-btn').style.display = 'block';
+    document.getElementById('snick-input').focus();
+});
+
+document.getElementById('snick-no-btn').addEventListener('click', () => {
+    applyCurse();
+    alertSnick("Big mistake. Have a curse.", true);
+});
+
+document.getElementById('snick-abort-btn').addEventListener('click', () => {
+    location.reload();
+});
+
+document.getElementById('snick-retry-btn').addEventListener('click', () => {
+    const quote = EXISTENTIAL_QUOTES.length > 0
+        ? EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)]
+        : "ERROR: EXISTENTIAL CRISIS NOT FOUND";
+    document.getElementById('snick-dialog').innerText = quote;
+});
+
+document.getElementById('snick-resume-btn').addEventListener('click', closeSnick);
+
+// Event Listeners for Pagination
+document.getElementById('prev-btn')?.addEventListener('click', () => {
+    prevPage();
+    playTypeSound();
+});
+document.getElementById('next-btn')?.addEventListener('click', () => {
+    nextPage();
+    playTypeSound();
+});
+
+setInterval(() => {
+    if (Math.random() > 0.95 && !snickActive && currentMode === 'sheet') {
+        triggerSnick();
+    }
+}, 15000);
