@@ -500,4 +500,32 @@ th {
 /* EFFECTS */
 .cursed-font,
 .cursed-font * {
-    font-family: 'Zapfino', 'Wingdings', 'Papyrus', cursive !i
+    font-family: 'Zapfino', 'Wingdings', 'Papyrus', cursive !important;
+    text-shadow: 2px 2px red;
+}
+
+.rgb-cycle {
+    animation: rgb-freakout 0.2s infinite;
+}
+
+@keyframes rgb-freakout {
+    0% {
+        color: red;
+        text-shadow: 2px 2px blue;
+    }
+
+    33% {
+        color: green;
+        text-shadow: -2px 2px red;
+    }
+
+    66% {
+        color: blue;
+        text-shadow: 2px -2px green;
+    }
+
+    100% {
+        color: red;
+        text-shadow: 2px 2px blue;
+    }
+}
