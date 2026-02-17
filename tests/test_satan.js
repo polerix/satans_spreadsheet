@@ -66,7 +66,7 @@ function processCSV(csvContent) {
 // --- Test Execution ---
 
 try {
-    const csvContent = fs.readFileSync('LEDGER_VOID_FINAL.csv', 'utf8');
+    const csvContent = fs.readFileSync('data/LEDGER_VOID_FINAL.csv', 'utf8');
     const souls = processCSV(csvContent);
 
     console.log(`Successfully parsed ${souls.length} souls.`);
