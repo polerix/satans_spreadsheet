@@ -158,47 +158,88 @@ let dataLoaded = false;
 
 Promise.all([
     fetch('json/riddles.json').then(r => r.json()),
+    fetch('data/damned.csv').then(r => r.text()),
     fetch('data/LEDGER_VOID_FINAL.csv').then(r => r.text()),
     fetch('json/secret.json').then(r => r.json()),
     fetch('json/existentialquotes.json').then(r => r.json())
-]).then(([riddles, csv, secrets, quotesData]) => {
-    // 1. Riddles & Content
+]).then(([riddles, damnedCSV, ledgerCSV, secrets, quotesData]) => {
     // 1. Riddles & Content
     QUOTES = quotesData.quotes || [];
     RIDDLES = riddles.riddles || [];
     EXISTENTIAL_QUOTES = quotesData.existential_quotes || [];
 
-    // 2. CSV Data
-    // 2. CSV Data (LEDGER_VOID_FINAL.csv)
-    // Expected Headers: NAME, SOUL ID, Wrongdoing, Atonement Task, Punishment, Difficulty, VIBE, Duration, Supervisor, BRIBE, Completion Check, Vote
-    const lines = csv.trim().split('\n');
-    // Line 1 is empty or headers? The file view shows line 1 as empty commas.
-    // Line 2 has headers: NAME,SOUL ID, ...
+    // 2. Parse damned.csv (NAME, SOUL ID)
+    const damnedLines = damnedCSV.trim().split('\n');
+    const damnedSouls = [];
 
-    // We will start parsing from line 3 (index 2)
-    for (let i = 2; i < lines.length; i++) {
-        if (!lines[i].trim() || lines[i].startsWith(',,,')) continue;
-
-        const row = parseCSVLine(lines[i]);
-        if (row.length >= 5) {
-            initialSoulsData.push({
+    // Skip header (line 1 empty, line 2 has headers)
+    for (let i = 2; i < damnedLines.length; i++) {
+        if (!damnedLines[i].trim()) continue;
+        const row = parseCSVLine(damnedLines[i]);
+        if (row.length >= 2 && row[1]) {  // Must have SOUL ID
+            damnedSouls.push({
                 name: row[0] || "UNKNOWN",
-                soulId: row[1] || "N/A",
-                wrongdoing: row[2] || "N/A",
-                atonement: row[3] || "N/A",
-                punishment: row[4] || "N/A",
-                difficulty: row[5] || "N/A",
-                status: row[6] || "ROTTING",
-                duration: row[7] || "ETERNAL",
-                supervisor: row[8] || "N/A",
-                bribe: row[9] || "FALSE",
-                completion: row[10] || "FALSE",
-                vote: row[11] || "0"
+                soulId: row[1]
             });
         }
     }
 
-    // Extract unique values for generators
+    // 3. Parse LEDGER_VOID_FINAL.csv (SOUL ID, Wrongdoing, Atonement, ...)
+    const ledgerLines = ledgerCSV.trim().split('\n');
+    const ledgerEntries = [];
+
+    // Skip header (line 1 empty, line 2 has headers)
+    for (let i = 2; i < ledgerLines.length; i++) {
+        if (!ledgerLines[i].trim() || ledgerLines[i].startsWith(',,,')) continue;
+        const row = parseCSVLine(ledgerLines[i]);
+        if (row.length >= 5 && row[0]) {  // Must have SOUL ID
+            ledgerEntries.push({
+                soulId: row[0],
+                wrongdoing: row[1] || "PENDING",
+                atonement: row[2] || "NONE",
+                punishment: row[3] || "AWAITING JUDGMENT",
+                difficulty: row[4] || "N/A",
+                status: row[5] || "ROTTING",
+                duration: row[6] || "ETERNAL",
+                supervisor: row[7] || "N/A",
+                bribe: row[8] || "FALSE",
+                completion: row[9] || "FALSE",
+                vote: row[10] || "0"
+            });
+        }
+    }
+
+    // 4. JOIN: Match each soul with their ledger entry by SOUL ID
+    initialSoulsData = damnedSouls.map(soul => {
+        const assignment = ledgerEntries.find(entry => entry.soulId === soul.soulId);
+
+        if (assignment) {
+            // Soul has an assignment
+            return {
+                name: soul.name,
+                soulId: soul.soulId,
+                ...assignment  // Spread ledger data
+            };
+        } else {
+            // Unassigned soul - use defaults
+            return {
+                name: soul.name,
+                soulId: soul.soulId,
+                wrongdoing: "PENDING ASSIGNMENT",
+                atonement: "NONE",
+                punishment: "AWAITING JUDGMENT",
+                difficulty: "TBD",
+                status: "LIMBO",
+                duration: "UNTIL ASSIGNED",
+                supervisor: "NONE",
+                bribe: "FALSE",
+                completion: "FALSE",
+                vote: "0"
+            };
+        }
+    });
+
+    // 5. Extract unique values for generators
     if (initialSoulsData.length > 0) {
         NAMES = [...new Set(initialSoulsData.map(s => s.name))];
         PUNISHMENTS = [...new Set(initialSoulsData.map(s => s.punishment))];
@@ -207,14 +248,15 @@ Promise.all([
         VIBES = [...new Set(initialSoulsData.map(s => s.status))];
     }
 
-
-    // 3. Secrets
+    // 6. Secrets
     SECRETS = secrets;
 
     dataLoaded = true;
     console.log("Hell loaded successfully.");
-    console.log("Loaded souls:", initialSoulsData.length);
-    console.log("Loaded riddles:", RIDDLES.length);
+    console.log(`Loaded ${damnedSouls.length} souls from damned.csv`);
+    console.log(`Loaded ${ledgerEntries.length} ledger entries`);
+    console.log(`Joined ${initialSoulsData.length} complete soul records`);
+    console.log(`Loaded ${RIDDLES.length} riddles`);
 
     checkLockout();
 }).catch(err => {
@@ -835,57 +877,4 @@ function applyCurse() {
 }
 
 function applyRGBCycle() {
-    document.body.classList.add('rgb-cycle');
-    setTimeout(() => {
-        document.body.classList.remove('rgb-cycle');
-    }, 20000);
-}
-
-document.getElementById('snick-submit-btn').addEventListener('click', handleSnickAnswer);
-document.getElementById('snick-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleSnickAnswer();
-});
-
-document.getElementById('snick-yes-btn').addEventListener('click', () => {
-    currentSnickScenario = 'goosechase';
-    currentRiddle = RIDDLES[Math.floor(Math.random() * RIDDLES.length)];
-    document.getElementById('snick-dialog').innerText = "Excellent. Solve this: " + currentRiddle.q;
-    document.getElementById('snick-buttons').style.display = 'none';
-    document.getElementById('snick-input').style.display = 'block';
-    document.getElementById('snick-submit-btn').style.display = 'block';
-    document.getElementById('snick-input').focus();
-});
-
-document.getElementById('snick-no-btn').addEventListener('click', () => {
-    applyCurse();
-    alertSnick("Big mistake. Have a curse.", true);
-});
-
-document.getElementById('snick-abort-btn').addEventListener('click', () => {
-    location.reload();
-});
-
-document.getElementById('snick-retry-btn').addEventListener('click', () => {
-    const quote = EXISTENTIAL_QUOTES.length > 0
-        ? EXISTENTIAL_QUOTES[Math.floor(Math.random() * EXISTENTIAL_QUOTES.length)]
-        : "ERROR: EXISTENTIAL CRISIS NOT FOUND";
-    document.getElementById('snick-dialog').innerText = quote;
-});
-
-document.getElementById('snick-resume-btn').addEventListener('click', closeSnick);
-
-// Event Listeners for Pagination
-document.getElementById('prev-btn')?.addEventListener('click', () => {
-    prevPage();
-    playTypeSound();
-});
-document.getElementById('next-btn')?.addEventListener('click', () => {
-    nextPage();
-    playTypeSound();
-});
-
-setInterval(() => {
-    if (Math.random() > 0.95 && !snickActive && currentMode === 'sheet') {
-        triggerSnick();
-    }
-}, 15000);
+    document.bo
