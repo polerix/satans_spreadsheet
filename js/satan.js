@@ -157,10 +157,10 @@ function spawnHandshakeEffect() {
 let dataLoaded = false;
 
 Promise.all([
-    fetch('riddles.json').then(r => r.json()),
+    fetch('json/riddles.json').then(r => r.json()),
     fetch('LEDGER_VOID_FINAL.csv').then(r => r.text()),
-    fetch('secret.json').then(r => r.json()),
-    fetch('existentialquotes.json').then(r => r.json())
+    fetch('json/secret.json').then(r => r.json()),
+    fetch('json/existentialquotes.json').then(r => r.json())
 ]).then(([riddles, csv, secrets, quotesData]) => {
     // 1. Riddles & Content
     // 1. Riddles & Content
