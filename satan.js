@@ -814,6 +814,19 @@ function closeSnick() {
 function resolveConnection() {
     handshakeBuffer = 100;
     document.getElementById('handshake-warning').style.visibility = 'hidden';
+
+    // Keep connection stable for 5 minutes
+    const connectionDuration = 5 * 60 * 1000; // 5 minutes
+    const endTime = Date.now() + connectionDuration;
+
+    const connectionInterval = setInterval(() => {
+        if (Date.now() >= endTime) {
+            clearInterval(connectionInterval);
+            return;
+        }
+        // Maintain buffer at max during blessed period
+        handshakeBuffer = 100;
+    }, 100);
 }
 
 function applyCurse() {
