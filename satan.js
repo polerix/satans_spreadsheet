@@ -17,6 +17,14 @@ let audioCtx = null;
 let pendingBribeAction = false;
 let currentRiddle = null;
 
+// --- PAGINATION GLOBALS ---
+let currentPage = 1;
+const rowsPerPage = 15;
+let totalPages = 1;
+let filteredSouls = []; // Store filtered results for pagination
+let currentColumnPage = 0; // 0 = First 6 cols (A), 1 = Next 6 cols (B)
+
+
 // Initialize Audio Context
 function initAudio() {
     if (!audioCtx) {
@@ -150,33 +158,55 @@ let dataLoaded = false;
 
 Promise.all([
     fetch('riddles.json').then(r => r.json()),
-    fetch('damned.csv').then(r => r.text()),
-    fetch('secret.json').then(r => r.json())
-]).then(([riddles, csv, secrets]) => {
+    fetch('LEDGER_VOID_FINAL.csv').then(r => r.text()),
+    fetch('secret.json').then(r => r.json()),
+    fetch('existentialquotes.json').then(r => r.json())
+]).then(([riddles, csv, secrets, quotesData]) => {
     // 1. Riddles & Content
-    NAMES = riddles.names || [];
-    PUNISHMENTS = riddles.punishments || [];
-    DURATIONS = riddles.durations || [];
-    ATONEMENTS = riddles.atonements || [];
-    VIBES = riddles.vibes || [];
-    QUOTES = riddles.quotes || [];
+    // 1. Riddles & Content
+    QUOTES = quotesData.quotes || [];
     RIDDLES = riddles.riddles || [];
-    EXISTENTIAL_QUOTES = riddles.existential_quotes || [];
+    EXISTENTIAL_QUOTES = quotesData.existential_quotes || [];
 
     // 2. CSV Data
+    // 2. CSV Data (LEDGER_VOID_FINAL.csv)
+    // Expected Headers: NAME, SOUL ID, Wrongdoing, Atonement Task, Punishment, Difficulty, VIBE, Duration, Supervisor, BRIBE, Completion Check, Vote
     const lines = csv.trim().split('\n');
-    for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',');
-        if (cols.length >= 5) {
+    // Line 1 is empty or headers? The file view shows line 1 as empty commas.
+    // Line 2 has headers: NAME,SOUL ID, ...
+
+    // We will start parsing from line 3 (index 2)
+    for (let i = 2; i < lines.length; i++) {
+        if (!lines[i].trim() || lines[i].startsWith(',,,')) continue;
+
+        const row = parseCSVLine(lines[i]);
+        if (row.length >= 5) {
             initialSoulsData.push({
-                name: cols[0].trim(),
-                punishment: cols[1].trim(),
-                duration: cols[2].trim(),
-                atonement: cols[3].trim(),
-                status: cols[4].trim()
+                name: row[0] || "UNKNOWN",
+                soulId: row[1] || "N/A",
+                wrongdoing: row[2] || "N/A",
+                atonement: row[3] || "N/A",
+                punishment: row[4] || "N/A",
+                difficulty: row[5] || "N/A",
+                status: row[6] || "ROTTING",
+                duration: row[7] || "ETERNAL",
+                supervisor: row[8] || "N/A",
+                bribe: row[9] || "FALSE",
+                completion: row[10] || "FALSE",
+                vote: row[11] || "0"
             });
         }
     }
+
+    // Extract unique values for generators
+    if (initialSoulsData.length > 0) {
+        NAMES = [...new Set(initialSoulsData.map(s => s.name))];
+        PUNISHMENTS = [...new Set(initialSoulsData.map(s => s.punishment))];
+        DURATIONS = [...new Set(initialSoulsData.map(s => s.duration))];
+        ATONEMENTS = [...new Set(initialSoulsData.map(s => s.atonement))];
+        VIBES = [...new Set(initialSoulsData.map(s => s.status))];
+    }
+
 
     // 3. Secrets
     SECRETS = secrets;
@@ -191,6 +221,25 @@ Promise.all([
     console.error("Failed to load resources:", err);
     alert("ERROR: Failed to load infernal database. Check console.");
 });
+
+function parseCSVLine(text) {
+    let result = [];
+    let cur = '';
+    let inQuote = false;
+    for (let i = 0; i < text.length; i++) {
+        let c = text[i];
+        if (c === '"') {
+            inQuote = !inQuote;
+        } else if (c === ',' && !inQuote) {
+            result.push(cur.trim());
+            cur = '';
+        } else {
+            cur += c;
+        }
+    }
+    result.push(cur.trim());
+    return result;
+}
 
 function checkLockout() {
     const lockoutUntil = parseInt(localStorage.getItem('lockoutUntil') || 0);
@@ -230,13 +279,50 @@ if (currentMode === 'sheet') {
 }
 let isRendering = false;
 
+// --- PAGINATION CONTROL ---
+function updatePagination() {
+    totalPages = Math.ceil(filteredSouls.length / rowsPerPage) || 1;
+    const pageIndicator = document.getElementById('page-indicator');
+    if (pageIndicator) {
+        const subPage = currentColumnPage === 0 ? 'A' : 'B';
+        pageIndicator.innerText = `PAGE ${currentPage}-${subPage} OF ${totalPages}`;
+    }
+}
+
+function nextPage() {
+    if (currentPage < totalPages) {
+        currentPage++;
+        selectedRow = 0; // Reset selection on page change
+        slowRender(document.getElementById('modal-input')?.value || ""); // Re-render with existing filter if any? 
+        // Actually slowRender takes a filter arg, but usually we filter global souls. 
+        // Let's rely on slowRender using 'souls' and local processing
+        slowRender();
+    }
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        selectedRow = 0;
+        slowRender();
+    }
+}
+
 // --- RENDERER ---
 async function slowRender(filter = "") {
     if (isRendering) return;
     isRendering = true;
     handshakeBuffer = 50;
 
-    const headers = ["SOUL ID", "PUNISHMENT", "ETA", "ATONEMENT", "VIBE"];
+    // Headers from the new CSV
+    const allHeaders = ["NAME", "SOUL ID", "WRONGDOING", "TASK", "PUNISHMENT", "DIFF", "VIBE", "DURATION", "SUPERVISOR", "BRIBE", "DONE", "VOTE"];
+
+    // Slice headers based on currentColumnPage (0 = 0-6, 1 = 6-12)
+    // Actually user requested 6 columns. 12 / 2 = 6.
+    const startCol = currentColumnPage * 6;
+    const endCol = startCol + 6;
+    const headers = allHeaders.slice(startCol, endCol);
+
     const thead = document.querySelector('thead');
     if (thead) {
         thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
@@ -244,42 +330,80 @@ async function slowRender(filter = "") {
 
     const tbody = document.getElementById('sheet-body');
     tbody.innerHTML = '';
-    const filtered = souls.filter(s => s.name.toUpperCase().includes(filter.toUpperCase()));
 
-    for (let r = 0; r < filtered.length; r++) {
-        const soul = filtered[r];
+    // Filter first
+    if (filter) {
+        filteredSouls = souls.filter(s => s.name.toUpperCase().includes(filter.toUpperCase()));
+        // Reset to page 1 on new filter
+        if (currentPage !== 1) currentPage = 1;
+    } else {
+        filteredSouls = souls; // or keep existing filteredSouls if we want to maintain state? 
+        // For simplicity, if no filter arg is passed, we assume we are just re-rendering current state.
+        // But the initData calls slowRender() without args.
+    }
+
+    updatePagination();
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = startIdx + rowsPerPage;
+    const pageData = filteredSouls.slice(startIdx, endIdx);
+
+    for (let r = 0; r < pageData.length; r++) {
+        const soul = pageData[r];
         const tr = document.createElement('tr');
         tbody.appendChild(tr);
 
-        const fields = [curse(soul.name), soul.punishment, soul.duration, curse(soul.atonement), soul.status];
+        // Map to headers: NAME, SOUL ID, WRONGDOING, TASK, PUNISHMENT, DIFF, VIBE, DURATION, SUPERVISOR, BRIBE, DONE, VOTE
+        const fields = [
+            curse(soul.name),
+            soul.soulId,
+            soul.wrongdoing.substring(0, 30), // Truncate
+            soul.atonement.substring(0, 30),
+            soul.punishment,
+            soul.difficulty,
+            soul.status,
+            soul.duration,
+            soul.supervisor,
+            soul.bribe,
+            soul.completion,
+            soul.vote
+        ];
 
-        for (let c = 0; c < fields.length; c++) {
-            const field = fields[c];
+        const displayFields = fields.slice(startCol, endCol);
+
+        for (let c = 0; c < displayFields.length; c++) {
+            const field = displayFields[c];
             const td = document.createElement('td');
 
+            // selectedCol is 0-5. We need to match it to c.
             if (currentMode === 'sheet' && r === selectedRow && c === selectedCol) {
                 td.classList.add('reverse-cell');
                 if (isEditMode) td.classList.add('edit-mode');
             }
 
             tr.appendChild(td);
-            const chars = Array.from(field);
+            const chars = Array.from(String(field)); // Ensure string
+
+            // Speed up rendering slightly for large tables
+            let chunk = "";
             for (let char of chars) {
-                while (handshakeBuffer <= 0) {
+                // Check handshake less frequently
+                if (Math.random() < 0.1 && handshakeBuffer <= 0) {
                     isConnectionLost = true;
                     document.getElementById('handshake-warning').style.visibility = 'visible';
                     document.getElementById('modem-text').innerText = "NO CARRIER";
-                    await new Promise(r => setTimeout(r, 100));
+                    await new Promise(res => setTimeout(res, 100));
                 }
                 isConnectionLost = false;
                 document.getElementById('handshake-warning').style.visibility = 'hidden';
-                document.getElementById('modem-text').innerText = "RECEIVING (" + Math.floor(handshakeBuffer) + "%)";
+                document.getElementById('modem-text').innerText = "RECEIVING";
 
-                td.textContent += char;
-                handshakeBuffer -= (Math.random() * 2 + 0.5);
-                playDataStream();
-                await new Promise(r => setTimeout(r, 33));
+                chunk += char;
+                handshakeBuffer -= 0.1;
             }
+            td.textContent = chunk;
+            playDataStream();
+            await new Promise(res => setTimeout(res, 5)); // Faster render
         }
     }
     isRendering = false;
@@ -389,7 +513,12 @@ document.addEventListener('keydown', (e) => {
         }
     }
     else if (currentMode === 'sheet') {
-        const soul = souls[selectedRow];
+        // souls is all souls, but we need page data for row selection
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const endIdx = startIdx + rowsPerPage;
+        const pageData = filteredSouls.slice(startIdx, endIdx);
+
+        const soul = pageData[selectedRow]; // selectedRow calls are now relative to PAGE
 
         if (isEditMode) {
             if (e.key === 'x' || e.key === 'X') {
@@ -398,31 +527,76 @@ document.addEventListener('keydown', (e) => {
                 return;
             }
 
-            if (selectedCol === 1) {
+            if (selectedCol === 3) { // Punishment is now index 3 in fields
+                // ... editing logic ...
+                // implementation of edit logic on paginated data
+                // For now, let's just make it simple/disable complex edit or fix indices
                 let idx = PUNISHMENTS.indexOf(soul.punishment);
                 if (e.key === 'ArrowDown') idx = (idx + 1) % PUNISHMENTS.length;
                 if (e.key === 'ArrowUp') idx = (idx - 1 + PUNISHMENTS.length) % PUNISHMENTS.length;
                 soul.punishment = PUNISHMENTS[idx];
 
-                const cell = document.getElementById('sheet-body').children[selectedRow].children[1];
+                const cell = document.getElementById('sheet-body').children[selectedRow].children[3];
                 cell.innerText = soul.punishment;
             }
         } else {
             if (e.key === 'ArrowDown') {
-                selectedRow = Math.min(selectedRow + 1, souls.length - 1);
-                slowRender();
+                if (selectedRow < pageData.length - 1) {
+                    selectedRow++;
+                    slowRender();
+                } else {
+                    nextPage();
+                }
             }
             if (e.key === 'ArrowUp') {
-                selectedRow = Math.max(selectedRow - 1, 0);
-                slowRender();
+                if (selectedRow > 0) {
+                    selectedRow--;
+                    slowRender();
+                } else {
+                    prevPage();
+                    selectedRow = rowsPerPage - 1; // Go to bottom of prev page
+                    slowRender();
+                }
             }
             if (e.key === 'ArrowLeft') {
-                selectedCol = Math.max(selectedCol - 1, 0);
-                slowRender();
+                if (selectedCol > 0) {
+                    selectedCol--;
+                    slowRender();
+                } else {
+                    // Navigate to previous column page
+                    if (currentColumnPage === 1) {
+                        currentColumnPage = 0;
+                        selectedCol = 5;
+                        slowRender();
+                    } else {
+                        if (currentPage > 1) {
+                            prevPage();
+                            currentColumnPage = 1;
+                            selectedCol = 5;
+                            slowRender();
+                        }
+                    }
+                }
             }
             if (e.key === 'ArrowRight') {
-                selectedCol = Math.min(selectedCol + 1, 4);
-                slowRender();
+                if (selectedCol < 5) { // 6 columns displayed, index 0-5
+                    selectedCol++;
+                    slowRender();
+                } else {
+                    // Navigate to next column page
+                    if (currentColumnPage === 0) {
+                        currentColumnPage = 1;
+                        selectedCol = 0;
+                        slowRender();
+                    } else {
+                        if (currentPage < totalPages) {
+                            nextPage();
+                            currentColumnPage = 0;
+                            selectedCol = 0;
+                            slowRender();
+                        }
+                    }
+                }
             }
 
             if (e.key === 'x' || e.key === 'X') {
@@ -686,6 +860,16 @@ document.getElementById('snick-retry-btn').addEventListener('click', () => {
 });
 
 document.getElementById('snick-resume-btn').addEventListener('click', closeSnick);
+
+// Event Listeners for Pagination
+document.getElementById('prev-btn')?.addEventListener('click', () => {
+    prevPage();
+    playTypeSound();
+});
+document.getElementById('next-btn')?.addEventListener('click', () => {
+    nextPage();
+    playTypeSound();
+});
 
 setInterval(() => {
     if (Math.random() > 0.95 && !snickActive && currentMode === 'sheet') {

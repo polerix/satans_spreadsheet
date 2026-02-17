@@ -49,10 +49,19 @@ You must authenticate to access the mainframe.
 -   **Data**: `damned.csv`, `secret.json`, `riddles.json`.
 -   **No Dependencies**: Runs on pure malice.
 
-## Installation
-1.  Clone the repository.
-2.  Open `index.html` in a browser.
-3.  **DO NOT** toggle full screen. He likes to watch.
+## Installation & Running
+Because this application uses external data files (JSON/CSV), modern browsers will block it from running directly from the file system due to CORS security policies.
+
+**To Run:**
+1.  Open your terminal/command prompt.
+2.  Navigate to the project folder.
+3.  Run the provided server script:
+    ```bash
+    python3 serve.py
+    ```
+    *Or if you don't have Python, use any local server (e.g., `npx http-server`, VS Code Live Server).*
+
+4.  The application should open automatically in your browser at `http://localhost:6660`.
 
 ---
 *Est. 2026 - The Underworld Corp.*
