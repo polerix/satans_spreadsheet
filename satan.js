@@ -505,7 +505,7 @@ document.addEventListener('keydown', (e) => {
                     document.body.classList.remove('theme-orange');
                     document.body.classList.add('theme-red');
 
-                    const lockoutTime = Date.now() + 20 * 60 * 1000;
+                    const lockoutTime = Date.now() + 5 * 60 * 1000;
                     localStorage.setItem('lockoutUntil', lockoutTime);
                     checkLockout();
                 }
