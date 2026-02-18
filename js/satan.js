@@ -59,6 +59,14 @@ const FIELD_CONFIG = {
     'vote': { editable: false, calculated: true, reason: 'Vote is automatic' }
 };
 
+const DROPDOWN_FIELDS = {
+    'atonement': ATONEMENTS,
+    'punishment': PUNISHMENTS,
+    'difficulty': ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'],
+    'duration': DURATIONS,
+    'completion': ['FALSE', 'TRUE']
+};
+
 function canEditField(fieldName, isNewEntry = false) {
     const config = FIELD_CONFIG[fieldName];
     if (!config) return false;
@@ -400,6 +408,9 @@ if (currentMode === 'sheet') {
                 }
             }, 15000);
         }
+
+        // Initialize audio (safe context)
+        initAudio();
     });
 }
 let isRendering = false;
@@ -540,7 +551,27 @@ async function slowRender(filter = "") {
                 chunk += char;
                 if (!currentUser.isAdmin) handshakeBuffer -= 0.1;
             }
+
             td.textContent = chunk;
+
+            // Add click handlers for selection and editing
+            td.onclick = () => {
+                if (isEditing) return;
+                selectedRow = r;
+                selectedCol = c;
+                slowRender();
+                // Show full text in status bar
+                document.getElementById('modem-text').innerText = String(field).toUpperCase();
+            };
+
+            td.ondblclick = (e) => {
+                e.stopPropagation();
+                if (isEditing) return;
+                selectedRow = r;
+                selectedCol = c;
+                openInlineEdit(td, r, c);
+            };
+
             playDataStream();
             await new Promise(res => setTimeout(res, 5)); // Faster render
         }
@@ -684,26 +715,55 @@ document.addEventListener('keydown', (e) => {
 
         const soul = pageData[selectedRow]; // selectedRow calls are now relative to PAGE
 
-        if (isEditMode) {
-            if (e.key === 'x' || e.key === 'X') {
-                isEditMode = false;
-                slowRender();
+        if (isEditing) {
+            // Handle inline edit navigation/save
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveInlineEdit();
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeInlineEdit();
+                return;
+            }
+            // If dropdown, handle arrow keys
+            if (currentEditType === 'dropdown') {
+                const list = document.querySelector('.cell-dropdown-list');
+                if (list) {
+                    const items = list.querySelectorAll('li');
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        editDropdownIndex = (editDropdownIndex + 1) % items.length;
+                        updateDropdownSelection(items);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        editDropdownIndex = (editDropdownIndex - 1 + items.length) % items.length;
+                        updateDropdownSelection(items);
+                    }
+                }
+            }
+        } else {
+            if (e.key === 'Enter') {
+                // Double enter to edit? Or just enter to edit
+                // User requested "click enter twice"
+                // Let's make Enter toggle edit mode on selected cell
+                e.preventDefault();
+                const tbody = document.getElementById('sheet-body');
+                if (tbody && tbody.children[selectedRow] && tbody.children[selectedRow].children[filteredSouls.length > 0 ? selectedCol : 0]) { // Correct cell
+                    // But slowRender handles DOM. We need to find the TD.
+                    // Let's just re-use openInlineEdit logic by finding the element.
+                    // Actually we iterate rows.
+                    // Let's just trigger it safely.
+                    const row = tbody.children[selectedRow];
+                    if (row) {
+                        const cell = row.children[selectedCol];
+                        if (cell) openInlineEdit(cell, selectedRow, selectedCol);
+                    }
+                }
                 return;
             }
 
-            if (selectedCol === 3) { // Punishment is now index 3 in fields
-                // ... editing logic ...
-                // implementation of edit logic on paginated data
-                // For now, let's just make it simple/disable complex edit or fix indices
-                let idx = PUNISHMENTS.indexOf(soul.punishment);
-                if (e.key === 'ArrowDown') idx = (idx + 1) % PUNISHMENTS.length;
-                if (e.key === 'ArrowUp') idx = (idx - 1 + PUNISHMENTS.length) % PUNISHMENTS.length;
-                soul.punishment = PUNISHMENTS[idx];
-
-                const cell = document.getElementById('sheet-body').children[selectedRow].children[3];
-                cell.innerText = soul.punishment;
-            }
-        } else {
             if (e.key === 'ArrowDown') {
                 if (selectedRow < pageData.length - 1) {
                     selectedRow++;
@@ -842,16 +902,7 @@ document.addEventListener('keydown', (e) => {
             currentMode = 'sheet';
         }
     }
-    else if (currentMode === 'editmodal') {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            saveEdit();
-        }
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            closeEditModal();
-        }
-    }
+    // 'editmodal' mode removed in favor of inline isEditing check in 'sheet' mode
 });
 
 function initData() {
@@ -927,120 +978,152 @@ function closeModal() {
     document.getElementById('input-modal').style.display = 'none';
 }
 
-// --- EDIT MODAL FUNCTIONS ---
-let editModalElement = null;
-let currentEditField = null;
-let currentEditSoulIndex = null;
+// --- INLINE EDITING ---
+let isEditing = false;
+let currentEditType = null; // 'text' or 'dropdown'
+let editDropdownIndex = 0;
+let editCellRef = null;
+let editSoulRef = null;
+let editFieldRef = null;
 
-function createEditModal() {
-    // Create modal container
-    const modal = document.createElement('div');
-    modal.id = 'edit-modal';
-    modal.className = 'modal';
-    modal.style.display = 'none';
+function openInlineEdit(td, rowIndex, colIndex) {
+    if (isEditing) return;
 
-    modal.innerHTML = `
-        <div style="background:#111; border:2px solid #0f0; padding:20px; max-width:500px; margin:50px auto;">
-            <h3 id="edit-field-name" style="margin:0 0 15px 0; color:#0f0;">EDIT FIELD</h3>
-            
-            <div id="edit-permission-warning" style="display:none; background:#330; border:1px solid #f90; padding:10px; margin-bottom:10px;">
-                ⚠️ ADMINISTRATOR ACCESS REQUIRED
-            </div>
-            
-            <div id="edit-calculated-notice" style="display:none; background:#003; border:1px solid #09f; padding:10px; margin-bottom:10px;">
-                🔢 CALCULATED VALUE - READ ONLY
-            </div>
-            
-            <div id="edit-viasnick-notice" style="display:none; background:#303; border:1px solid #f0f; padding:10px; margin-bottom:10px;">
-                💰 BRIBE CAN ONLY BE PURCHASED VIA SNICK
-            </div>
-            
-            <div style="margin:15px 0;">
-                <label for="edit-input" style="display:block; margin-bottom:5px; color:#0f0;">Value:</label>
-                <textarea id="edit-input" rows="3" style="width:100%; font-family:monospace; background:#000; color:#0f0; border:1px solid #0f0; padding:5px;"></textarea>
-            </div>
-            
-            <div style="margin-top:15px; text-align:right;">
-                <button id="edit-save-btn" style="margin-right:10px; background:#0f0; color:#000; border:none; padding:5px 15px; cursor:pointer;">SAVE [ENTER]</button>
-                <button id="edit-cancel-btn" style="background:#f00; color:#fff; border:none; padding:5px 15px; cursor:pointer;">CANCEL [ESC]</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    editModalElement = modal;
-
-    // Add event listeners
-    document.getElementById('edit-save-btn').addEventListener('click', saveEdit);
-    document.getElementById('edit-cancel-btn').addEventListener('click', closeEditModal);
-}
-
-function openEditModal(fieldName, soulIndex) {
-    if (!editModalElement) return;
-
+    // Get data
     const startIdx = (currentPage - 1) * rowsPerPage;
-    const soul = filteredSouls[startIdx + soulIndex];
-    if (!soul) return;
+    const soul = filteredSouls[startIdx + rowIndex];
+    const fieldName = getFieldNameFromColumn(colIndex);
 
-    currentEditField = fieldName;
-    currentEditSoulIndex = soulIndex;
+    if (!soul || !fieldName) return;
 
-    const config = FIELD_CONFIG[fieldName];
-    const canEdit = canEditField(fieldName);
-
-    // Update modal title
-    document.getElementById('edit-field-name').innerText = `EDIT: ${fieldName.toUpperCase()}`;
-
-    // Hide all warnings
-    document.getElementById('edit-permission-warning').style.display = 'none';
-    document.getElementById('edit-calculated-notice').style.display = 'none';
-    document.getElementById('edit-viasnick-notice').style.display = 'none';
-
-    // Show appropriate warning/notice
-    if (config && config.viaSnick) {
-        document.getElementById('edit-viasnick-notice').style.display = 'block';
-    } else if (config && config.calculated) {
-        document.getElementById('edit-calculated-notice').style.display = 'block';
-    } else if (!canEdit) {
-        document.getElementById('edit-permission-warning').style.display = 'block';
-    }
-
-    // Set current value
-    document.getElementById('edit-input').value = soul[fieldName] || '';
-    document.getElementById('edit-input').disabled = !canEdit;
-
-    // Show modal
-    currentMode = 'editmodal';
-    editModalElement.style.display = 'block';
-    document.getElementById('edit-input').focus();
-}
-
-function saveEdit() {
-    if (!canEditField(currentEditField)) {
-        alertSnick('PERMISSION DENIED', true);
+    // Check permissions
+    if (!canEditField(fieldName)) {
+        document.getElementById('modem-text').innerText = "ADMIN ACCESS REQUIRED";
         playSnickFail();
-        closeEditModal();
         return;
     }
 
-    const newValue = document.getElementById('edit-input').value;
-    const startIdx = (currentPage - 1) * rowsPerPage;
-    const globalIndex = souls.findIndex(s => s === filteredSouls[startIdx + currentEditSoulIndex]);
+    isEditing = true;
+    td.classList.add('cell-editing');
+    editCellRef = td;
+    editSoulRef = soul;
+    editFieldRef = fieldName;
 
-    if (globalIndex !== -1) {
-        souls[globalIndex][currentEditField] = newValue;
-        playTypeSound(600);
-        slowRender();
+    const currentValue = soul[fieldName];
+    const dropdownOptions = DROPDOWN_FIELDS[fieldName];
+
+    td.innerHTML = '';
+
+    if (dropdownOptions) {
+        currentEditType = 'dropdown';
+        // Create dropdown
+        const wrap = document.createElement('div');
+        wrap.className = 'cell-dropdown-wrap';
+
+        const currentDisplay = document.createElement('div');
+        currentDisplay.className = 'cell-dropdown-current';
+        currentDisplay.innerText = currentValue;
+        wrap.appendChild(currentDisplay);
+
+        const list = document.createElement('ul');
+        list.className = 'cell-dropdown-list';
+
+        editDropdownIndex = dropdownOptions.indexOf(currentValue);
+        if (editDropdownIndex === -1) editDropdownIndex = 0;
+
+        dropdownOptions.forEach((opt, i) => {
+            const li = document.createElement('li');
+            li.innerText = opt;
+            if (i === editDropdownIndex) li.classList.add('dd-selected');
+
+            li.onclick = (e) => {
+                e.stopPropagation();
+                editDropdownIndex = i;
+                saveInlineEdit();
+            };
+            li.onmouseenter = () => {
+                editDropdownIndex = i;
+                updateDropdownSelection(list.querySelectorAll('li'));
+            };
+
+            list.appendChild(li);
+        });
+
+        wrap.appendChild(list);
+        td.appendChild(wrap);
+
+        // Auto-scroll to selection
+        setTimeout(() => {
+            const selected = list.children[editDropdownIndex];
+            if (selected) selected.scrollIntoView({ block: 'nearest' });
+        }, 10);
+
+    } else {
+        currentEditType = 'text';
+        // Create text input
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'cell-input';
+        input.value = currentValue;
+
+        input.onkeydown = (e) => {
+            e.stopPropagation(); // prevent global handler
+            if (e.key === 'Enter') saveInlineEdit();
+            if (e.key === 'Escape') closeInlineEdit();
+        };
+
+        td.appendChild(input);
+        input.focus();
     }
-
-    closeEditModal();
 }
 
-function closeEditModal() {
-    currentMode = 'sheet';
-    if (editModalElement) editModalElement.style.display = 'none';
-    currentEditField = null;
-    currentEditSoulIndex = null;
+function updateDropdownSelection(items) {
+    items.forEach((item, i) => {
+        if (i === editDropdownIndex) {
+            item.classList.add('dd-selected');
+            item.scrollIntoView({ block: 'nearest' });
+            // Update current display header safely
+            const wrap = item.closest('.cell-dropdown-wrap');
+            if (wrap) {
+                const display = wrap.querySelector('.cell-dropdown-current');
+                if (display) display.innerText = item.innerText;
+            }
+        } else {
+            item.classList.remove('dd-selected');
+        }
+    });
+}
+
+function saveInlineEdit() {
+    if (!isEditing || !editSoulRef) return;
+
+    let newValue = null;
+
+    if (currentEditType === 'text') {
+        const input = editCellRef.querySelector('input');
+        if (input) newValue = input.value.toUpperCase();
+    } else if (currentEditType === 'dropdown') {
+        const options = DROPDOWN_FIELDS[editFieldRef];
+        if (options) newValue = options[editDropdownIndex];
+    }
+
+    if (newValue !== null) {
+        editSoulRef[editFieldRef] = newValue;
+        playTypeSound(600);
+        document.getElementById('modem-text').innerText = "VALUE UPDATED";
+    }
+
+    closeInlineEdit();
+}
+
+function closeInlineEdit() {
+    isEditing = false;
+    editCellRef = null;
+    editSoulRef = null;
+    editFieldRef = null;
+    currentEditType = null;
+    // Re-render to restore cell state
+    slowRender();
 }
 
 setInterval(() => {
