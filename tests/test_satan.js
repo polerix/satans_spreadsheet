@@ -99,4 +99,5 @@ try {
     if (totalPages < 2) console.error("FAIL: Should be at least 2 pages.");
 
 } catch (err) {
-    console.error("Error reading/processing file:", err
+    console.error("Error reading/processing file:", err);
+}
