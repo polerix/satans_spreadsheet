@@ -634,8 +634,12 @@ document.addEventListener('keydown', (e) => {
                 localStorage.setItem('currentUsername', loginUser);
                 localStorage.setItem('currentUserIsAdmin', targetUser?.isAdmin || false);
 
-                // Redirect to spreadsheet.html instead of SPA toggle
-                window.location.href = 'spreadsheet.html';
+                // Admin goes to review screen; Sinner goes straight to spreadsheet
+                if (targetUser?.isAdmin) {
+                    window.location.href = 'admin-review.html';
+                } else {
+                    window.location.href = 'spreadsheet.html';
+                }
             } else {
                 passInput.value = '';
                 playSnickFail();
@@ -773,27 +777,46 @@ document.addEventListener('keydown', (e) => {
     }
     else if (currentMode === 'modal') {
         if (e.key === 'Enter') {
-            const val = document.getElementById('modal-input').value;
+            const val = document.getElementById('modal-input').value.trim();
             if (document.getElementById('modal-label').innerText.includes("ADD")) {
-                souls.push({
-                    name: val.toUpperCase(),
-                    punishment: PUNISHMENTS[0],
-                    duration: DURATIONS[0],
-                    atonement: ATONEMENTS[0],
-                    status: "ROTTING",
-                    soulId: 'NEW-' + Date.now(),
-                    wrongdoing: 'UNKNOWN',
-                    difficulty: 'N/A',
-                    supervisor: 'N/A',
-                    bribe: 'FALSE',
-                    completion: 'FALSE',
-                    vote: '0'
-                });
-                // Deferred bribe reward: user must reach last page to earn it
-                pendingSoulReward = true;
-                pendingAddSoul = false;
-                document.getElementById('modem-text').innerText = "SOUL LOGGED";
-                setTimeout(() => { document.getElementById('modem-text').innerText = "IDLE"; }, 2000);
+                if (val) {
+                    const newSoul = {
+                        name: val.toUpperCase(),
+                        punishment: PUNISHMENTS[0] || 'ETERNAL FILING',
+                        duration: DURATIONS[0] || 'FOREVER',
+                        atonement: ATONEMENTS[0] || 'NONE',
+                        status: "ROTTING",
+                        soulId: 'NEW-' + Date.now(),
+                        wrongdoing: 'UNKNOWN',
+                        difficulty: 'N/A',
+                        supervisor: 'N/A',
+                        bribe: 'FALSE',
+                        completion: 'FALSE',
+                        vote: '0',
+                        submittedAt: Date.now(),
+                        submittedBy: currentUser.username
+                    };
+
+                    if (currentUser.isAdmin) {
+                        // Admin-added souls go straight to approved list
+                        const approved = JSON.parse(localStorage.getItem('approvedSouls') || '[]');
+                        approved.push({ ...newSoul, approved: true, approvedAt: Date.now() });
+                        localStorage.setItem('approvedSouls', JSON.stringify(approved));
+                        souls.push(newSoul);
+                        document.getElementById('modem-text').innerText = "SOUL APPROVED";
+                    } else {
+                        // Sinner-added souls go to pending queue for admin review
+                        const pending = JSON.parse(localStorage.getItem('pendingSouls') || '[]');
+                        pending.push(newSoul);
+                        localStorage.setItem('pendingSouls', JSON.stringify(pending));
+                        document.getElementById('modem-text').innerText = "SOUL SUBMITTED FOR APPROVAL";
+                    }
+
+                    // Deferred bribe reward: user must reach last page to earn it
+                    pendingSoulReward = true;
+                    pendingAddSoul = false;
+                    setTimeout(() => { document.getElementById('modem-text').innerText = "IDLE"; }, 2500);
+                }
             }
             closeModal();
             slowRender(val.length > 0 && !document.getElementById('modal-label').innerText.includes("ADD") ? val : "");
@@ -829,6 +852,19 @@ function initData() {
             atonement: ATONEMENTS[Math.floor(Math.random() * ATONEMENTS.length)],
             status: VIBES[Math.floor(Math.random() * VIBES.length)]
         }));
+    }
+
+    // Merge approved souls from localStorage (visible to all users)
+    const approvedSouls = JSON.parse(localStorage.getItem('approvedSouls') || '[]');
+    if (approvedSouls.length > 0) {
+        // Avoid duplicates by soulId
+        const existingIds = new Set(souls.map(s => s.soulId));
+        approvedSouls.forEach(s => {
+            if (!existingIds.has(s.soulId)) {
+                souls.push(s);
+                existingIds.add(s.soulId);
+            }
+        });
     }
 
     slowRender();
