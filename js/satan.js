@@ -759,14 +759,14 @@ document.addEventListener('keydown', (e) => {
                 }
             }
 
-            if (e.key.toLowerCase() === 'b') {
+            if (e.key.toLowerCase() === 'b' && e.shiftKey) {
                 pendingBribeAction = true;
                 triggerSnick('bribe');
             }
-            if (e.key.toLowerCase() === 'a') { openModal("ADD NEW DAMNED:"); pendingAddSoul = true; }
+            if (e.key.toLowerCase() === 'a' && e.shiftKey) { openModal("ADD NEW DAMNED:"); pendingAddSoul = true; }
             if (e.key.toLowerCase() === 's' && !e.shiftKey) openModal("SEARCH DATABASE:");
-            if (e.key.toLowerCase() === 'i') initData();
-            if (e.key.toLowerCase() === 'h') triggerSnick('help');
+            if (e.key.toLowerCase() === 'i' && e.shiftKey) initData();
+            if (e.key.toLowerCase() === 'h' && e.shiftKey) triggerSnick('help');
             if (e.key === 'S' && e.shiftKey) saveToCSV();
             if (e.key === 'Escape') location.reload();
         }

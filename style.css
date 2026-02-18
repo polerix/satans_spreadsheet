@@ -53,9 +53,9 @@ body {
     height: 768px;
     background-color: var(--bg-black);
     position: relative;
-    border: 20px solid #333;
+    border: 20px solid #444;
     border-radius: 40px;
-    box-shadow: 0 0 60px rgba(0, 0, 0, 1), inset 0 0 100px rgba(51, 255, 51, 0.05);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 1), inset 0 0 100px rgba(51, 255, 51, 0.1), 0 0 20px rgba(51, 255, 51, 0.15);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -193,7 +193,7 @@ table {
 
 th,
 td {
-    border: 1px solid var(--dark-green);
+    border: 1px solid var(--phosphor-green);
     padding: 4px 4px;
     text-align: left;
     height: 25px;
@@ -204,8 +204,10 @@ td {
 }
 
 th {
-    background: var(--dark-green);
+    background: var(--phosphor-green);
     color: var(--bg-black);
+    font-weight: bold;
+    letter-spacing: 1px;
 }
 
 .selected {
@@ -226,8 +228,8 @@ th {
 #bribe-bar {
     font-size: 1.2em;
     letter-spacing: 2px;
-    color: var(--hell-red);
-    text-shadow: 0 0 8px var(--hell-red);
+    color: #ff3333;
+    text-shadow: 0 0 8px #ff3333;
     min-width: 80px;
     text-align: right;
     transition: text-shadow 0.3s;
