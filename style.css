@@ -218,6 +218,19 @@ th {
     border-top: 1px solid var(--phosphor-green);
     padding-top: 10px;
     font-size: 0.8em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#bribe-bar {
+    font-size: 1.2em;
+    letter-spacing: 2px;
+    color: var(--hell-red);
+    text-shadow: 0 0 8px var(--hell-red);
+    min-width: 80px;
+    text-align: right;
+    transition: text-shadow 0.3s;
 }
 
 .modal {

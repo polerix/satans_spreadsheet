@@ -17,7 +17,18 @@ let audioCtx = null;
 let pendingBribeAction = false;
 let currentRiddle = null;
 let handshakeGracePeriod = true; // Prevent drops for first minute
-setTimeout(() => { handshakeGracePeriod = false; }, 60000); // 60 seconds
+let briberTokens = 0;            // Bribe tokens (tracked beyond 5, display capped at 5)
+let pendingSoulReward = false;   // True when a soul was added but user hasn't reached last page yet
+let startupSnickInterval = null; // Interval to re-trigger Snick during grace period
+
+// End grace period after 60s, then resume normal handshake decay
+setTimeout(() => {
+    handshakeGracePeriod = false;
+    if (startupSnickInterval) {
+        clearInterval(startupSnickInterval);
+        startupSnickInterval = null;
+    }
+}, 60000);
 
 // --- PAGINATION GLOBALS ---
 let currentPage = 1;
@@ -351,6 +362,7 @@ let souls = [];
 let selectedRow = 0;
 let selectedCol = 0;
 let isEditMode = false;
+let pendingAddSoul = false; // Track if [A] was used to add a soul (for deferred bribe reward)
 let currentMode = document.getElementById('login-screen') ? 'login' : 'sheet';
 let loginUser = 'SINNER';
 
@@ -361,7 +373,6 @@ if (currentMode === 'sheet') {
         currentUser.username = localStorage.getItem('currentUsername') || 'SINNER';
         currentUser.isAdmin = localStorage.getItem('currentUserIsAdmin') === 'true';
 
-
         // Create edit modal
         createEditModal();
         console.log(`Logged in as: ${currentUser.username} (Admin: ${currentUser.isAdmin})`);
@@ -369,6 +380,26 @@ if (currentMode === 'sheet') {
         initData();
         localStorage.removeItem('loginFailures');
         document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
+
+        // Admin exemption: disable handshake entirely, hide bribe bar
+        if (currentUser.isAdmin) {
+            handshakeGracePeriod = true; // Keep grace period on forever for admin
+            const briberBar = document.getElementById('bribe-bar');
+            if (briberBar) briberBar.style.display = 'none';
+        } else {
+            // Non-admin: trigger startup Snick bribe demand immediately
+            updateBribeBar();
+            setTimeout(() => {
+                triggerSnick('startup');
+            }, 1500); // Small delay so the spreadsheet loads first
+
+            // Re-trigger every 15s during grace period if Snick is dismissed without solving
+            startupSnickInterval = setInterval(() => {
+                if (handshakeGracePeriod && !snickActive) {
+                    triggerSnick('startup');
+                }
+            }, 15000);
+        }
     });
 }
 let isRendering = false;
@@ -386,11 +417,16 @@ function updatePagination() {
 function nextPage() {
     if (currentPage < totalPages) {
         currentPage++;
-        selectedRow = 0; // Reset selection on page change
-        slowRender(document.getElementById('modal-input')?.value || ""); // Re-render with existing filter if any? 
-        // Actually slowRender takes a filter arg, but usually we filter global souls. 
-        // Let's rely on slowRender using 'souls' and local processing
+        selectedRow = 0;
         slowRender();
+    }
+    // Reward for reaching last page after adding a soul
+    if (currentPage === totalPages && pendingSoulReward) {
+        pendingSoulReward = false;
+        briberTokens++;
+        updateBribeBar();
+        document.getElementById('modem-text').innerText = "BRIBE EARNED";
+        setTimeout(() => { document.getElementById('modem-text').innerText = "IDLE"; }, 2000);
     }
 }
 
@@ -481,19 +517,28 @@ async function slowRender(filter = "") {
             // Speed up rendering slightly for large tables
             let chunk = "";
             for (let char of chars) {
-                // Check handshake less frequently (but only after grace period)
-                if (!handshakeGracePeriod && Math.random() < 0.1 && handshakeBuffer <= 0) {
-                    isConnectionLost = true;
-                    document.getElementById('handshake-warning').style.visibility = 'visible';
-                    document.getElementById('modem-text').innerText = "NO CARRIER";
-                    await new Promise(res => setTimeout(res, 100));
+                // Admin: never lose connection
+                if (!currentUser.isAdmin && !handshakeGracePeriod && Math.random() < 0.1 && handshakeBuffer <= 0) {
+                    // Try to spend a bribe token to auto-restore
+                    if (briberTokens > 0) {
+                        briberTokens--;
+                        updateBribeBar();
+                        handshakeBuffer = 100;
+                        document.getElementById('modem-text').innerText = "BRIBE ACCEPTED";
+                        await new Promise(res => setTimeout(res, 300));
+                    } else {
+                        isConnectionLost = true;
+                        document.getElementById('handshake-warning').style.visibility = 'visible';
+                        document.getElementById('modem-text').innerText = "NO CARRIER";
+                        await new Promise(res => setTimeout(res, 100));
+                    }
                 }
                 isConnectionLost = false;
                 document.getElementById('handshake-warning').style.visibility = 'hidden';
                 document.getElementById('modem-text').innerText = "RECEIVING";
 
                 chunk += char;
-                handshakeBuffer -= 0.1;
+                if (!currentUser.isAdmin) handshakeBuffer -= 0.1;
             }
             td.textContent = chunk;
             playDataStream();
@@ -528,6 +573,10 @@ document.addEventListener('keydown', (e) => {
 
     if (e.code === 'Space' && !e.shiftKey) {
         e.preventDefault();
+        // Admin: handshake always stable, no need to maintain
+        if (currentUser.isAdmin) return;
+        // During grace period, SPACE does nothing (Snick controls the connection)
+        if (handshakeGracePeriod) return;
         handshakeBuffer = Math.min(handshakeBuffer + 20, 100);
         spawnHandshakeEffect();
         playTypeSound(400);
@@ -714,7 +763,7 @@ document.addEventListener('keydown', (e) => {
                 pendingBribeAction = true;
                 triggerSnick('bribe');
             }
-            if (e.key.toLowerCase() === 'a') openModal("ADD NEW DAMNED:");
+            if (e.key.toLowerCase() === 'a') { openModal("ADD NEW DAMNED:"); pendingAddSoul = true; }
             if (e.key.toLowerCase() === 's' && !e.shiftKey) openModal("SEARCH DATABASE:");
             if (e.key.toLowerCase() === 'i') initData();
             if (e.key.toLowerCase() === 'h') triggerSnick('help');
@@ -731,8 +780,20 @@ document.addEventListener('keydown', (e) => {
                     punishment: PUNISHMENTS[0],
                     duration: DURATIONS[0],
                     atonement: ATONEMENTS[0],
-                    status: "ROTTING"
+                    status: "ROTTING",
+                    soulId: 'NEW-' + Date.now(),
+                    wrongdoing: 'UNKNOWN',
+                    difficulty: 'N/A',
+                    supervisor: 'N/A',
+                    bribe: 'FALSE',
+                    completion: 'FALSE',
+                    vote: '0'
                 });
+                // Deferred bribe reward: user must reach last page to earn it
+                pendingSoulReward = true;
+                pendingAddSoul = false;
+                document.getElementById('modem-text').innerText = "SOUL LOGGED";
+                setTimeout(() => { document.getElementById('modem-text').innerText = "IDLE"; }, 2000);
             }
             closeModal();
             slowRender(val.length > 0 && !document.getElementById('modal-label').innerText.includes("ADD") ? val : "");
@@ -793,6 +854,15 @@ function initData() {
             currentMode = 'demotivational';
         }
     }, 12000);
+}
+
+// --- BRIBE BAR ---
+function updateBribeBar() {
+    const bar = document.getElementById('bribe-bar');
+    if (!bar) return;
+    const display = Math.min(briberTokens, 5);
+    bar.textContent = '😈'.repeat(display) || '·····';
+    bar.title = `BRIBE TOKENS: ${briberTokens}`;
 }
 
 function openModal(text) {
@@ -942,6 +1012,7 @@ let currentSnickScenario = null;
 
 const SNICK_SCENARIOS = ['bribe', 'goosechase', 'laugh', 'time'];
 const SNICK_IMGS = {
+    'startup': 'images/snick_bribe.png',
     'bribe': 'images/snick_bribe.png',
     'goosechase': 'images/snick_goosechase.png',
     'laugh': 'images/snick_laugh.png',
@@ -963,7 +1034,15 @@ function triggerSnick(forceScenario = null) {
     document.getElementById('snick-buttons').style.display = 'none';
     document.getElementById('snick-help-buttons').style.display = 'none';
 
-    if (currentSnickScenario === 'bribe') {
+    if (currentSnickScenario === 'startup') {
+        currentRiddle = RIDDLES[Math.floor(Math.random() * RIDDLES.length)];
+        document.getElementById('snick-dialog').innerText =
+            "The infernal mainframe is initializing... Solve my riddle for a bribe token, or suffer the consequences. " +
+            (currentRiddle ? currentRiddle.q : "What has keys but no locks?");
+        document.getElementById('snick-input').style.display = 'block';
+        document.getElementById('snick-submit-btn').style.display = 'block';
+        document.getElementById('snick-input').focus();
+    } else if (currentSnickScenario === 'bribe') {
         document.getElementById('snick-dialog').innerText = "Looks like you're having connection issues! Want to bribe me to fix it?";
         document.getElementById('snick-buttons').style.display = 'block';
     } else if (currentSnickScenario === 'goosechase') {
@@ -993,10 +1072,14 @@ function triggerSnick(forceScenario = null) {
 function handleSnickAnswer() {
     const val = document.getElementById('snick-input').value.trim().toLowerCase();
 
-    if (currentSnickScenario === 'goosechase' || (currentSnickScenario === 'bribe' && document.getElementById('snick-input').style.display !== 'none')) {
+    if (currentSnickScenario === 'goosechase' || currentSnickScenario === 'startup' ||
+        (currentSnickScenario === 'bribe' && document.getElementById('snick-input').style.display !== 'none')) {
         if (currentRiddle && currentRiddle.a.includes(val)) {
             resolveConnection();
-            alertSnick("Fine. Connection restored.", true);
+            // Grant a bribe token for solving a riddle
+            briberTokens++;
+            updateBribeBar();
+            alertSnick("Fine. Connection restored. +1 😈 BRIBE TOKEN.", true);
             playSnickSuccess();
 
             if (pendingBribeAction) {
