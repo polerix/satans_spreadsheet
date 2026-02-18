@@ -571,6 +571,19 @@ function saveToCSV() {
 document.addEventListener('keydown', (e) => {
     if (!audioCtx) initAudio();
 
+    // SHIFT+ESCAPE: universal dismiss — close Snick and clear all curses
+    if (e.key === 'Escape' && e.shiftKey) {
+        e.preventDefault();
+        // Dismiss Snick popup
+        if (snickActive) {
+            closeSnick();
+        }
+        // Clear screen curses
+        document.body.classList.remove('cursed-font', 'rgb-cycle');
+        cursedFontActive = false;
+        return;
+    }
+
     if (e.code === 'Space' && !e.shiftKey) {
         e.preventDefault();
         // Admin: handshake always stable, no need to maintain
