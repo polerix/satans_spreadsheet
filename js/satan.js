@@ -16,6 +16,8 @@ let isConnectionLost = false;
 let audioCtx = null;
 let pendingBribeAction = false;
 let currentRiddle = null;
+let handshakeGracePeriod = true; // Prevent drops for first minute
+setTimeout(() => { handshakeGracePeriod = false; }, 60000); // 60 seconds
 
 // --- PAGINATION GLOBALS ---
 let currentPage = 1;
@@ -23,6 +25,47 @@ const rowsPerPage = 15;
 let totalPages = 1;
 let filteredSouls = []; // Store filtered results for pagination
 let currentColumnPage = 0; // 0 = First 6 cols (A), 1 = Next 6 cols (B)
+
+// --- ROLE \u0026 PERMISSIONS ---
+let currentUser = {
+    username: 'SINNER',
+    isAdmin: false
+};
+
+// Field edit permissions configuration
+const FIELD_CONFIG = {
+    'name': { editable: false, reason: 'Soul identity is permanent' },
+    'soulId': { editable: false, reason: 'Soul ID is permanent' },
+    'wrongdoing': { editable: true, adminOnly: true, userCanAdd: true },
+    'atonement': { editable: true, adminOnly: true, userCanAdd: true },
+    'punishment': { editable: true, adminOnly: true, userCanAdd: true },
+    'difficulty': { editable: true, adminOnly: true, userCanAdd: true },
+    'duration': { editable: true, adminOnly: true, userCanAdd: true },
+    'supervisor': { editable: true, adminOnly: true, userCanAdd: true },
+    'bribe': { editable: true, adminOnly: false, viaSnick: true },
+    'status': { editable: false, calculated: true, reason: 'VIBE is calculated' },
+    'completion': { editable: true, adminOnly: true, calculated: true },
+    'vote': { editable: false, calculated: true, reason: 'Vote is automatic' }
+};
+
+function canEditField(fieldName, isNewEntry = false) {
+    const config = FIELD_CONFIG[fieldName];
+    if (!config) return false;
+    if (!config.editable) return false;
+    if (config.viaSnick) return false; // BRIBE only via Snick
+    if (isNewEntry && config.userCanAdd) return true;
+    return config.adminOnly ? currentUser.isAdmin : true;
+}
+
+// Map column index to field name (columns displayed depend on currentColumnPage)
+function getFieldNameFromColumn(colIndex) {
+    // All fields: NAME, SOUL ID, WRONGDOING, TASK, PUNISHMENT, DIFF, VIBE, DURATION, SUPERVISOR, BRIBE, DONE, VOTE
+    const allFields = ['name', 'soulId', 'wrongdoing', 'atonement', 'punishment', 'difficulty', 'status', 'duration', 'supervisor', 'bribe', 'completion', 'vote'];
+    const startCol = currentColumnPage * 6;
+    const actualIndex = startCol + colIndex;
+    return allFields[actualIndex] || null;
+}
+
 
 
 // Initialize Audio Context
@@ -314,6 +357,15 @@ let loginUser = 'SINNER';
 // Auto-init if on spreadsheet page
 if (currentMode === 'sheet') {
     window.addEventListener('DOMContentLoaded', () => {
+        // Load user role from localStorage
+        currentUser.username = localStorage.getItem('currentUsername') || 'SINNER';
+        currentUser.isAdmin = localStorage.getItem('currentUserIsAdmin') === 'true';
+
+
+        // Create edit modal
+        createEditModal();
+        console.log(`Logged in as: ${currentUser.username} (Admin: ${currentUser.isAdmin})`);
+
         initData();
         localStorage.removeItem('loginFailures');
         document.body.classList.remove('theme-yellow', 'theme-orange', 'theme-red');
@@ -429,8 +481,8 @@ async function slowRender(filter = "") {
             // Speed up rendering slightly for large tables
             let chunk = "";
             for (let char of chars) {
-                // Check handshake less frequently
-                if (Math.random() < 0.1 && handshakeBuffer <= 0) {
+                // Check handshake less frequently (but only after grace period)
+                if (!handshakeGracePeriod && Math.random() < 0.1 && handshakeBuffer <= 0) {
                     isConnectionLost = true;
                     document.getElementById('handshake-warning').style.visibility = 'visible';
                     document.getElementById('modem-text').innerText = "NO CARRIER";
@@ -529,6 +581,10 @@ document.addEventListener('keydown', (e) => {
             }
 
             if (success) {
+                // Save user info for spreadsheet page
+                localStorage.setItem('currentUsername', loginUser);
+                localStorage.setItem('currentUserIsAdmin', targetUser?.isAdmin || false);
+
                 // Redirect to spreadsheet.html instead of SPA toggle
                 window.location.href = 'spreadsheet.html';
             } else {
@@ -646,6 +702,14 @@ document.addEventListener('keydown', (e) => {
                 slowRender();
             }
 
+            if (e.key.toLowerCase() === 'e') {
+                // Open edit modal for current cell
+                const fieldName = getFieldNameFromColumn(selectedCol);
+                if (fieldName) {
+                    openEditModal(fieldName, selectedRow);
+                }
+            }
+
             if (e.key.toLowerCase() === 'b') {
                 pendingBribeAction = true;
                 triggerSnick('bribe');
@@ -679,6 +743,16 @@ document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'x') {
             document.getElementById('demotivational-modal').style.display = 'none';
             currentMode = 'sheet';
+        }
+    }
+    else if (currentMode === 'editmodal') {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEdit();
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeEditModal();
         }
     }
 });
@@ -732,6 +806,122 @@ function openModal(text) {
 function closeModal() {
     currentMode = 'sheet';
     document.getElementById('input-modal').style.display = 'none';
+}
+
+// --- EDIT MODAL FUNCTIONS ---
+let editModalElement = null;
+let currentEditField = null;
+let currentEditSoulIndex = null;
+
+function createEditModal() {
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.id = 'edit-modal';
+    modal.className = 'modal';
+    modal.style.display = 'none';
+
+    modal.innerHTML = `
+        <div style="background:#111; border:2px solid #0f0; padding:20px; max-width:500px; margin:50px auto;">
+            <h3 id="edit-field-name" style="margin:0 0 15px 0; color:#0f0;">EDIT FIELD</h3>
+            
+            <div id="edit-permission-warning" style="display:none; background:#330; border:1px solid #f90; padding:10px; margin-bottom:10px;">
+                ⚠️ ADMINISTRATOR ACCESS REQUIRED
+            </div>
+            
+            <div id="edit-calculated-notice" style="display:none; background:#003; border:1px solid #09f; padding:10px; margin-bottom:10px;">
+                🔢 CALCULATED VALUE - READ ONLY
+            </div>
+            
+            <div id="edit-viasnick-notice" style="display:none; background:#303; border:1px solid #f0f; padding:10px; margin-bottom:10px;">
+                💰 BRIBE CAN ONLY BE PURCHASED VIA SNICK
+            </div>
+            
+            <div style="margin:15px 0;">
+                <label for="edit-input" style="display:block; margin-bottom:5px; color:#0f0;">Value:</label>
+                <textarea id="edit-input" rows="3" style="width:100%; font-family:monospace; background:#000; color:#0f0; border:1px solid #0f0; padding:5px;"></textarea>
+            </div>
+            
+            <div style="margin-top:15px; text-align:right;">
+                <button id="edit-save-btn" style="margin-right:10px; background:#0f0; color:#000; border:none; padding:5px 15px; cursor:pointer;">SAVE [ENTER]</button>
+                <button id="edit-cancel-btn" style="background:#f00; color:#fff; border:none; padding:5px 15px; cursor:pointer;">CANCEL [ESC]</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    editModalElement = modal;
+
+    // Add event listeners
+    document.getElementById('edit-save-btn').addEventListener('click', saveEdit);
+    document.getElementById('edit-cancel-btn').addEventListener('click', closeEditModal);
+}
+
+function openEditModal(fieldName, soulIndex) {
+    if (!editModalElement) return;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const soul = filteredSouls[startIdx + soulIndex];
+    if (!soul) return;
+
+    currentEditField = fieldName;
+    currentEditSoulIndex = soulIndex;
+
+    const config = FIELD_CONFIG[fieldName];
+    const canEdit = canEditField(fieldName);
+
+    // Update modal title
+    document.getElementById('edit-field-name').innerText = `EDIT: ${fieldName.toUpperCase()}`;
+
+    // Hide all warnings
+    document.getElementById('edit-permission-warning').style.display = 'none';
+    document.getElementById('edit-calculated-notice').style.display = 'none';
+    document.getElementById('edit-viasnick-notice').style.display = 'none';
+
+    // Show appropriate warning/notice
+    if (config && config.viaSnick) {
+        document.getElementById('edit-viasnick-notice').style.display = 'block';
+    } else if (config && config.calculated) {
+        document.getElementById('edit-calculated-notice').style.display = 'block';
+    } else if (!canEdit) {
+        document.getElementById('edit-permission-warning').style.display = 'block';
+    }
+
+    // Set current value
+    document.getElementById('edit-input').value = soul[fieldName] || '';
+    document.getElementById('edit-input').disabled = !canEdit;
+
+    // Show modal
+    currentMode = 'editmodal';
+    editModalElement.style.display = 'block';
+    document.getElementById('edit-input').focus();
+}
+
+function saveEdit() {
+    if (!canEditField(currentEditField)) {
+        alertSnick('PERMISSION DENIED', true);
+        playSnickFail();
+        closeEditModal();
+        return;
+    }
+
+    const newValue = document.getElementById('edit-input').value;
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const globalIndex = souls.findIndex(s => s === filteredSouls[startIdx + currentEditSoulIndex]);
+
+    if (globalIndex !== -1) {
+        souls[globalIndex][currentEditField] = newValue;
+        playTypeSound(600);
+        slowRender();
+    }
+
+    closeEditModal();
+}
+
+function closeEditModal() {
+    currentMode = 'sheet';
+    if (editModalElement) editModalElement.style.display = 'none';
+    currentEditField = null;
+    currentEditSoulIndex = null;
 }
 
 setInterval(() => {
