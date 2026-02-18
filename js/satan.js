@@ -744,7 +744,7 @@ document.addEventListener('keydown', (e) => {
                 }
             }
         } else {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' || e.key === 'e' || e.key === 'E') {
                 // Double enter to edit? Or just enter to edit
                 // User requested "click enter twice"
                 // Let's make Enter toggle edit mode on selected cell

@@ -3,6 +3,7 @@
     --dark-green: #003300;
     --bg-black: #050505;
     --hell-red: #ff3300;
+    --crt-yellow: #ffcc00;
 }
 
 * {
@@ -250,7 +251,7 @@ td.cell-editing {
 .cell-input {
     width: 100%;
     min-width: 180px;
-    background: var(--phosphor-green);
+    background: var(--crt-yellow);
     color: var(--bg-black);
     border: none;
     outline: none;
@@ -270,12 +271,12 @@ td.cell-editing {
     min-width: 200px;
     z-index: 100;
     background: var(--bg-black);
-    border: 2px solid var(--phosphor-green);
-    box-shadow: 0 0 12px rgba(51, 255, 51, 0.4);
+    border: 2px solid var(--crt-yellow);
+    box-shadow: 0 0 12px rgba(255, 204, 0, 0.4);
 }
 
 .cell-dropdown-current {
-    background: var(--phosphor-green);
+    background: var(--crt-yellow);
     color: var(--bg-black);
     font-family: 'Courier New', Courier, monospace;
     font-size: 11px;
@@ -298,14 +299,14 @@ td.cell-editing {
     font-family: 'Courier New', Courier, monospace;
     font-size: 11px;
     padding: 3px 8px;
-    color: var(--phosphor-green);
+    color: var(--crt-yellow);
     cursor: pointer;
     text-transform: uppercase;
 }
 
 .cell-dropdown-list li:hover,
 .cell-dropdown-list li.dd-selected {
-    background: var(--phosphor-green);
+    background: var(--crt-yellow);
     color: var(--bg-black);
 }
 
@@ -464,9 +465,10 @@ td.cell-editing {
 }
 
 /* Grid Selection */
+/* Grid Selection */
 .reverse-cell {
-    background-color: var(--crt-green);
-    color: black;
+    background-color: var(--phosphor-green);
+    color: var(--bg-black);
     animation: flicker 0.1s infinite;
 }
 
