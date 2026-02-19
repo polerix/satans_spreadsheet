@@ -520,6 +520,8 @@ async function slowRender(filter = "") {
             if (currentMode === 'sheet' && r === selectedRow && c === selectedCol) {
                 td.classList.add('reverse-cell');
                 if (isEditMode) td.classList.add('edit-mode');
+                // Bold text for selected cell
+                td.classList.add('bold-text');
             }
 
             tr.appendChild(td);
@@ -574,6 +576,14 @@ async function slowRender(filter = "") {
 
             playDataStream();
             await new Promise(res => setTimeout(res, 5)); // Faster render
+
+            // Check for overflow only on selected cell AFTER rendering text
+            if (currentMode === 'sheet' && r === selectedRow && c === selectedCol) {
+                if (td.scrollWidth > td.clientWidth) {
+                    const originalText = td.textContent;
+                    td.innerHTML = `<div class="marquee-container"><div class="marquee-content">${originalText}</div></div>`;
+                }
+            }
         }
     }
     isRendering = false;
@@ -844,7 +854,10 @@ document.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 's' && !e.shiftKey) openModal("SEARCH DATABASE:");
             if (e.key.toLowerCase() === 'i' && e.shiftKey) initData();
             if (e.key.toLowerCase() === 'h' && e.shiftKey) triggerSnick('help');
-            if (e.key === 'S' && e.shiftKey) saveToCSV();
+            if (e.key.toLowerCase() === 'i' && e.shiftKey) initData();
+            if (e.key.toLowerCase() === 'h' && e.shiftKey) triggerSnick('help');
+            // if (e.key === 'S' && e.shiftKey) saveToCSV(); // EXPORT DISABLED PER MANAGEMENT
+            if (e.key === 'Escape') location.reload();
             if (e.key === 'Escape') location.reload();
         }
     }
