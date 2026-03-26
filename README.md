@@ -65,7 +65,7 @@ Because this application uses external data files (JSON/CSV), modern browsers wi
 4. Access the application at `http://localhost:6660`. 🐚
 
 ## 🌊 Live Deployment
-The latest version is deployed at: [https://polerix.github.io/satans_spreadsheet/](https://polerix.github.io/satans_spreadsheet/) 💧
+The latest version is deployed at: [https://polerix.github.io/satans-spreadsheet/](https://polerix.github.io/satans-spreadsheet/) 💧
 
 ---
 *Est. 2026 - The Underworld Corp.*

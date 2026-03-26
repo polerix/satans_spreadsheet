@@ -1,8 +1,8 @@
 // --- DATA LOADER MODULE ---
 // Handles loading and caching of external data files
 
-const CACHE_KEY = 'satans_spreadsheet_data';
-const CACHE_TIMESTAMP_KEY = 'satans_spreadsheet_cache_time';
+const CACHE_KEY = 'satans-spreadsheet_data';
+const CACHE_TIMESTAMP_KEY = 'satans-spreadsheet_cache_time';
 const CACHE_DURATION = 3600000; // 1 hour in milliseconds
 
 export let NAMES = [];
